@@ -51,8 +51,11 @@ dependencies {
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-analytics")
 
+
     implementation("androidx.multidex:multidex:2.0.1")
     implementation(libs.androidx.navigation.fragment)
+
+    implementation("com.google.firebase:firebase-database:20.3.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
