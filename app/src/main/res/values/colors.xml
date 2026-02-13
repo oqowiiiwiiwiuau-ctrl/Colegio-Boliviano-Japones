@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+
+    <color name="my_primary">#5E35B1</color>
+    <color name="my_secondary">#673AB7</color>
+
+    <color name="table_header">#3F51B5</color>
+    <color name="table_row_even">#FFFFFF</color>
+    <color name="table_row_odd">#F5F5F5</color>
+    <color name="green">#4CAF50</color>
+    <color name="blue">#2196F3</color>
+
+    <!-- Colores principales -->
+    <color name="color_primario">#1A237E</color> <!-- Azul oscuro formal -->
+    <color name="color_secundario">#283593</color> <!-- Azul medio -->
+    <color name="color_accent">#FF9800</color> <!-- Naranja para acentos -->
+    <color name="fondo_app">#F5F7FA</color> <!-- Gris muy claro -->
+    <color name="texto_primario">#2C3E50</color> <!-- Azul grisáceo oscuro -->
+
+    <!-- Colores para cada curso -->
+    <color name="curso_primero">#3498DB</color> <!-- Azul cielo -->
+    <color name="curso_segundo">#2ECC71</color> <!-- Verde esmeralda -->
+    <color name="curso_tercero">#9B59B6</color> <!-- Púrpura -->
+    <color name="curso_cuarto">#E74C3C</color> <!-- Rojo -->
+    <color name="curso_quinto">#F39C12</color> <!-- Naranja -->
+    <color name="curso_sexto">#1ABC9C</color> <!-- Turquesa -->
+
+    <!-- Colores adicionales -->
+    <color name="blanco">#FFFFFF</color>
+    <color name="gris_claro">#ECF0F1</color>
+    <color name="gris_medio">#BDC3C7</color>
+
+
+
+</resources>

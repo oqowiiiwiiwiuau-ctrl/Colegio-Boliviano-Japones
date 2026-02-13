@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1050434577754",
+    "firebase_url": "https://colegio-71940-default-rtdb.firebaseio.com",
+    "project_id": "colegio-71940",
+    "storage_bucket": "colegio-71940.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1050434577754:android:b5cb583aecafd201677f63",
+        "android_client_info": {
+          "package_name": "com.graficar.colegio"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYzysn2TTnHSQlLU74Y4DHHtrqDI35a_A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

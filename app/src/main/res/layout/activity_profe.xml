@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/fondo_app">
+
+    <!-- Encabezado elegante -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/color_primario"
+        android:padding="20dp"
+        android:elevation="8dp">
+
+        <!-- Logo o icono -->
+        <ImageView
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/ic_school"
+            android:layout_gravity="center"
+            />
+
+        <!-- Título del colegio -->
+        <TextView
+            android:id="@+id/tvTituloColegio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Unidad Educativa Técnico Humanístico Boliviano Japonés"
+            android:textSize="18sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="12dp"
+            android:lineSpacingExtra="4dp" />
+
+        <!-- Subtítulo -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Panel de Gestión Docente"
+            android:textSize="14sp"
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:alpha="0.9" />
+
+    </LinearLayout>
+
+    <!-- Saludo del profesor -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/color_secundario"
+        android:padding="16dp"
+        android:layout_marginTop="2dp"
+        android:elevation="4dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Bienvenido, Profesor"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Año Escolar 2024"
+            android:textSize="14sp"
+            android:textColor="@android:color/white"
+            android:background="@color/color_accent"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:radius="12dp" />
+
+    </LinearLayout>
+
+    <!-- Título de sección -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Seleccione un Curso"
+        android:textSize="20sp"
+        android:textColor="@color/texto_primario"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="16dp"
+        android:background="@android:color/white"
+        android:layout_marginTop="4dp"
+        android:elevation="2dp" />
+
+    <!-- Lista de cursos en Grid -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewCursos"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="12dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
+
+    <!-- Pie de página -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/color_primario"
+        android:padding="12dp"
+        android:layout_marginTop="4dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sistema de Gestión Académica"
+            android:textSize="12sp"
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:alpha="0.8" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Versión 1.0 - U.E. Boliviano Japonés"
+            android:textSize="10sp"
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:alpha="0.6"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

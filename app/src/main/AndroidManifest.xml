@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Colegio App"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Colegio">
+        <activity
+            android:name=".ui.PrimeroSegundaria"
+            android:exported="false" />
+        <!-- Actividades de cursos -->
+        <activity
+            android:name=".ui.PrimeroActivity"
+            android:exported="false"
+            android:label="Primero de Secundaria" />
+        <activity
+            android:name=".ui.ProfeActivity"
+            android:exported="false"
+            android:label="Panel del Profesor" /> <!-- Actividad de Login (pantalla de inicio) -->
+        <activity
+            android:name=".ui.LoginActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity> <!-- Actividad Principal (para administradores) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:label="Colegio App" />
+    </application>
+
+</manifest>

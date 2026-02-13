@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:paddingBottom="140dp">
+
+        <!-- Campo para ingresar nombre del estudiante -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nombre del Estudiante:"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/editTextStudentName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ej: Miguelito"
+            android:textSize="16sp"
+            android:padding="12dp" />
+
+        <!-- Botón para buscar datos -->
+        <Button
+            android:id="@+id/btnBuscarDatos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mostrar Datos"
+            android:layout_marginTop="15dp"
+            android:padding="12dp"
+            android:backgroundTint="#4CAF50"
+            android:textColor="@android:color/white" />
+
+        <!-- Nombre del estudiante (se mostrará después de buscar) -->
+        <TextView
+            android:id="@+id/textStudentName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Estudiante:"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="20dp"
+            android:visibility="gone" />
+
+        <!-- Spinner de materias -->
+        <Spinner
+            android:id="@+id/spinnerMaterias"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:visibility="gone" />
+
+        <!-- Card con notas -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardNotas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="8dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:id="@+id/textMateriaTitulo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Seleccione una materia"
+                    android:textStyle="bold"
+                    android:textSize="18sp"/>
+
+                <TextView
+                    android:id="@+id/textNotas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notas aparecerán aquí"
+                    android:textSize="14sp"
+                    android:layout_marginTop="10dp"
+                    android:lineSpacingExtra="4dp"/>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Botón para exportar PDF -->
+        <Button
+            android:id="@+id/btnExportarPDF"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Exportar boletín en PDF"
+            android:layout_marginTop="15dp"
+            android:padding="12dp"
+            android:backgroundTint="#3F51B5"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+
+        <!-- Mensaje de datos verificados -->
+        <TextView
+            android:id="@+id/t"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Datos verificados"
+            android:textSize="14sp"
+            android:layout_marginTop="20dp"
+            android:textColor="#4CAF50"
+            android:textStyle="bold"/>
+
+    </LinearLayout>
+
+</ScrollView>
