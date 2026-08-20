@@ -23,8 +23,8 @@ public class LoginActivity extends AppCompatActivity {
     private TextView textViewError;
 
     // Credenciales de prueba
-    private static final String VALID_USERNAME = "admi";
-    private static final String VALID_PASSWORD = "admi";
+    private static final String VALID_USERNAME = "padre";
+    private static final String VALID_PASSWORD = "padre";
     private static final String TEACHER_USERNAME = "profe";
     private static final String TEACHER_PASSWORD = "profe";
 
