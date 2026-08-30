@@ -7,6 +7,9 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -30,40 +33,107 @@ import java.util.Map;
 
 public class PrimeroActivity extends AppCompatActivity {
     private TableLayout tablaNotas;
+    private TableLayout tablaFija;
+    private ScrollView scrollVertical;
+    private HorizontalScrollView scrollHorizontal;
+    private ScrollView scrollFijaVertical;
     private List<Estudiante> listaEstudiantes;
     private DatabaseReference databaseReference;
     private Map<String, Map<String, Object>> cambiosPendientes = new HashMap<>();
     private TextView tvTituloCurso;
-    private View btnGuardar;
+    private LinearLayout contenedorPrincipal;
 
     private String cursoActual = "Matemática";
 
+    // ENCABEZADOS
     private String[] encabezados = {
             "N°",
-            "ESTUDIANTE",
-            "PRÁCTICAS\nB1",
-            "FINAL\nB1",
-            "PRÁCTICAS\nB2",
-            "FINAL\nB2",
-            "PRÁCTICAS\nB3",
-            "FINAL\nB3",
-            "PRÁCTICAS\nB4",
-            "FINAL\nB4",
-            "PROMEDIO"
+            "APELLIDOS Y NOMBRES",
+            "SELLOS DE\nAGENDA",
+            "NOTA",
+            "CARÁTULAS",
+            "PROMEDIO\nDIMENSIÓN\n(5 pts)",
+            "Nº SELLOS\nAPUNTES",
+            "PUNTAJE DE\nAPUNTES",
+            "MAPA CONCEP.\nDE TRIÁNGULOS",
+            "EV. PLANO\nCARTESIANO",
+            "LECTURA\nMATEMÁTICA",
+            "EVALUACIÓN\nTRIMESTRAL",
+            "PROMEDIO\nDIMENSIÓN\n(45 pts)",
+            "Nº SELLOS\nPRÁCTICAS",
+            "PUNTAJE DE\nPRÁCTICAS",
+            "PRACTICAS DE\nLIBRO SUDOKU",
+            "EV. DE ANGULOS\nRECTOS Y LLANOS",
+            "DIV. NUM.\nENTEROS",
+            "PROMEDIO\nDIMENSIÓN\n(40 pts)",
+            "AULA\nABIERTA",
+            "CALIFICACIÓN\nDEL DECIDIR",
+            "PROMEDIO\nDIMENSIÓN\n(5 pts)",
+            "TOTAL\n(95 pts)",
+            "AUTO-\nEVALUACIÓN",
+            "NOTA\nPARCIAL",
+            "PONDERA-\ncIONES",
+            "NOTA\nTRIMESTRAL\n(100 pts)"
     };
 
+    // ANCHOS DE COLUMNAS
     private int[] anchosColumnas = {
-            40,     // N° (aumentado un poco)
-            160,    // ESTUDIANTE (aumentado)
-            90,     // PRÁCTICAS B1
-            90,     // FINAL B1
-            90,     // PRÁCTICAS B2
-            90,     // FINAL B2
-            90,     // PRÁCTICAS B3
-            90,     // FINAL B3
-            90,     // PRÁCTICAS B4
-            90,     // FINAL B4
-            100     // PROMEDIO
+            40,     // N°
+            180,    // APELLIDOS Y NOMBRES
+            80,     // SELLOS DE AGENDA
+            70,     // NOTA
+            80,     // CARÁTULAS
+            80,     // PROMEDIO DIMENSIÓN (5 pts)
+            80,     // Nº SELLOS APUNTES
+            90,     // PUNTAJE DE APUNTES
+            90,     // MAPA CONCEP. DE TRIÁNGULOS
+            90,     // EV. PLANO CARTESIANO
+            90,     // LECTURA MATEMÁTICA
+            90,     // EVALUACIÓN TRIMESTRAL
+            90,     // PROMEDIO DIMENSIÓN (45 pts)
+            90,     // Nº SELLOS PRÁCTICAS
+            90,     // PUNTAJE DE PRÁCTICAS
+            100,    // PRACTICAS DE LIBRO SUDOKU
+            100,    // EV. DE ANGULOS RECTOS Y LLANOS
+            90,     // DIV. NUM. ENTEROS
+            90,     // PROMEDIO DIMENSIÓN (40 pts)
+            80,     // AULA ABIERTA
+            90,     // CALIFICACIÓN DEL DECIDIR
+            90,     // PROMEDIO DIMENSIÓN (5 pts)
+            80,     // TOTAL (95 pts)
+            80,     // AUTOEVALUACIÓN
+            80,     // NOTA PARCIAL
+            80,     // PONDERACIONES
+            90      // NOTA TRIMESTRAL (100 pts)
+    };
+
+    // MAPEO DE CLAVES DE FIREBASE
+    private String[] clavesFirebase = {
+            "sellosAgenda",
+            "nota",
+            "caratulas",
+            "promedioDimension5",
+            "nroSellosApuntes",
+            "puntajeApuntes",
+            "mapaConceptoTriangulos",
+            "evPlanoCartesiano",
+            "lecturaMatematica",
+            "evaluacionTrimestral",
+            "promedioDimension45",
+            "nroSellosPracticas",
+            "puntajePracticas",
+            "practicasLibroSudoku",
+            "evAngulosRectosLlanos",
+            "divNumerosEnteros",
+            "promedioDimension40",
+            "aulaAbierta",
+            "calificacionDecidir",
+            "promedioDimension5_2",
+            "total95",
+            "autoevaluacion",
+            "notaParcial",
+            "ponderaciones",
+            "notaTrimestral100"
     };
 
     @Override
@@ -71,17 +141,36 @@ public class PrimeroActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_primero);
 
+        // Inicializar vistas
         tablaNotas = findViewById(R.id.tablaNotas);
+        tablaFija = findViewById(R.id.tablaFija);
+        scrollVertical = findViewById(R.id.scrollVertical);
+        scrollHorizontal = findViewById(R.id.scrollHorizontal);
+        scrollFijaVertical = findViewById(R.id.scrollFijaVertical);
         tvTituloCurso = findViewById(R.id.tvTituloCurso);
+        contenedorPrincipal = findViewById(R.id.contenedorPrincipal);
 
-        // Botón de guardar (puedes agregar un botón en tu layout o usar el de back con otra función)
+        // Sincronizar scroll vertical entre ambas tablas
+        scrollVertical.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            if (scrollFijaVertical != null) {
+                scrollFijaVertical.scrollTo(0, scrollY);
+            }
+        });
+
+        // Sincronizar scroll vertical desde la tabla fija hacia la tabla de notas
+        scrollFijaVertical.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            if (scrollVertical != null) {
+                scrollVertical.scrollTo(0, scrollY);
+            }
+        });
+
+        // Botón de guardar
         findViewById(R.id.btnBack).setOnClickListener(v -> {
             guardarTodosLosCambios();
             finish();
         });
 
-        // Agregar botón de guardar en el header (opcional - si quieres un botón específico)
-        // Si no tienes un botón de guardar, puedes usar un long press en el título
+        // Long press en el título para guardar
         tvTituloCurso.setOnLongClickListener(v -> {
             guardarTodosLosCambios();
             return true;
@@ -89,7 +178,7 @@ public class PrimeroActivity extends AppCompatActivity {
 
         // Inicializar Firebase
         try {
-            databaseReference = FirebaseDatabase.getInstance().getReference("alumnos");
+            databaseReference = FirebaseDatabase.getInstance().getReference("alumnosPrimeroC");
             Log.d("Firebase", "Referencia creada: " + databaseReference);
         } catch (Exception e) {
             Log.e("Firebase", "Error al inicializar Firebase: " + e.getMessage());
@@ -110,34 +199,30 @@ public class PrimeroActivity extends AppCompatActivity {
 
                 Log.d("Firebase", "Total alumnos encontrados: " + snapshot.getChildrenCount());
 
-                // MOSTRAR TODOS LOS ESTUDIANTES, tengan o no la materia
                 for (DataSnapshot alumnoSnapshot : snapshot.getChildren()) {
                     String nombreAlumno = alumnoSnapshot.getKey();
+                    String nombreMostrar = nombreAlumno.replace("_", " ");
                     Log.d("Firebase", "Procesando alumno: " + nombreAlumno);
 
-                    Estudiante estudiante = new Estudiante(contador, nombreAlumno);
+                    Estudiante estudiante = new Estudiante(contador, nombreMostrar, nombreAlumno);
 
-                    // Buscar si tiene la materia actual
-                    DataSnapshot cursoSnapshot = alumnoSnapshot.child(cursoActual);
+                    DataSnapshot calificacionesSnapshot = alumnoSnapshot.child("calificaciones");
 
-                    if (cursoSnapshot.exists()) {
-                        Log.d("Firebase", "  ✓ " + nombreAlumno + " tiene " + cursoActual);
+                    if (calificacionesSnapshot.exists()) {
+                        Log.d("Firebase", "  ✓ " + nombreAlumno + " tiene calificaciones");
 
-                        // Cargar datos de cada bimestre si existen
-                        for (int i = 1; i <= 4; i++) {
-                            String bimestre = "B" + i;
-                            DataSnapshot bimestreSnapshot = cursoSnapshot.child(bimestre);
+                        for (int i = 0; i < clavesFirebase.length; i++) {
+                            String clave = clavesFirebase[i];
+                            DataSnapshot notaSnapshot = calificacionesSnapshot.child(clave);
 
-                            if (bimestreSnapshot.exists()) {
-                                String practicas = bimestreSnapshot.child("practicas").getValue(String.class);
-                                String final_ = bimestreSnapshot.child("final").getValue(String.class);
-
-                                estudiante.setNotasBimestre(i, practicas, final_);
+                            if (notaSnapshot.exists()) {
+                                Object valor = notaSnapshot.getValue();
+                                String valorStr = valor != null ? valor.toString() : "--";
+                                estudiante.setNota(i, valorStr);
                             }
                         }
                     } else {
-                        Log.d("Firebase", "  ✗ " + nombreAlumno + " NO tiene " + cursoActual + " (se mostrará con --)");
-                        // El estudiante ya tiene valores por defecto "--"
+                        Log.d("Firebase", "  ✗ " + nombreAlumno + " NO tiene calificaciones");
                     }
 
                     listaEstudiantes.add(estudiante);
@@ -147,9 +232,8 @@ public class PrimeroActivity extends AppCompatActivity {
                 Log.d("Firebase", "Total estudiantes en lista: " + listaEstudiantes.size());
 
                 runOnUiThread(() -> {
-                    tvTituloCurso.setText(cursoActual + " - " + listaEstudiantes.size() + " alumnos");
-                    crearTablaNotas();
-
+                    tvTituloCurso.setText("Primero C - " + listaEstudiantes.size() + " alumnos");
+                    crearTablas();
                     Toast.makeText(PrimeroActivity.this,
                             "Se cargaron " + listaEstudiantes.size() + " estudiantes",
                             Toast.LENGTH_SHORT).show();
@@ -168,8 +252,9 @@ public class PrimeroActivity extends AppCompatActivity {
         });
     }
 
-    private void crearTablaNotas() {
+    private void crearTablas() {
         tablaNotas.removeAllViews();
+        tablaFija.removeAllViews();
 
         if (listaEstudiantes == null || listaEstudiantes.isEmpty()) {
             TextView tvMensaje = new TextView(this);
@@ -191,97 +276,134 @@ public class PrimeroActivity extends AppCompatActivity {
     }
 
     private void crearFilaEncabezados() {
-        TableRow filaEncabezado = new TableRow(this);
-        filaEncabezado.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
+        // --- ENCABEZADO PARA TABLA FIJA ---
+        TableRow filaEncabezadoFija = new TableRow(this);
+        filaEncabezadoFija.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
 
-        for (int i = 0; i < encabezados.length; i++) {
+        // Columna N°
+        TextView tvNumero = new TextView(this);
+        tvNumero.setText("N°");
+        tvNumero.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
+        tvNumero.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+        tvNumero.setTextSize(11);
+        tvNumero.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvNumero.setGravity(Gravity.CENTER);
+        TableRow.LayoutParams paramsNumero = new TableRow.LayoutParams(dpToPx(anchosColumnas[0]), dpToPx(55));
+        paramsNumero.setMargins(dpToPx(1), dpToPx(1), dpToPx(1), dpToPx(1));
+        tvNumero.setLayoutParams(paramsNumero);
+        filaEncabezadoFija.addView(tvNumero);
+
+        // Columna NOMBRE
+        TextView tvNombre = new TextView(this);
+        tvNombre.setText("APELLIDOS Y NOMBRES");
+        tvNombre.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
+        tvNombre.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+        tvNombre.setTextSize(11);
+        tvNombre.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvNombre.setGravity(Gravity.CENTER);
+        TableRow.LayoutParams paramsNombre = new TableRow.LayoutParams(dpToPx(anchosColumnas[1]), dpToPx(55));
+        paramsNombre.setMargins(dpToPx(1), dpToPx(1), dpToPx(1), dpToPx(1));
+        tvNombre.setLayoutParams(paramsNombre);
+        filaEncabezadoFija.addView(tvNombre);
+
+        tablaFija.addView(filaEncabezadoFija);
+
+        // --- ENCABEZADO PARA TABLA DE NOTAS ---
+        TableRow filaEncabezadoNotas = new TableRow(this);
+        filaEncabezadoNotas.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
+
+        for (int i = 2; i < encabezados.length; i++) {
             TextView textView = new TextView(this);
             textView.setText(encabezados[i]);
-            textView.setPadding(dpToPx(8), dpToPx(10), dpToPx(8), dpToPx(10));
+            textView.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
             textView.setTextColor(ContextCompat.getColor(this, android.R.color.white));
-            textView.setTextSize(13);
+            textView.setTextSize(11);
             textView.setTypeface(null, android.graphics.Typeface.BOLD);
             textView.setGravity(Gravity.CENTER);
 
             if (encabezados[i].contains("\n")) {
                 textView.setSingleLine(false);
-                textView.setMaxLines(2);
+                textView.setMaxLines(3);
             }
 
             TableRow.LayoutParams params = new TableRow.LayoutParams(
                     dpToPx(anchosColumnas[i]),
-                    dpToPx(50)
+                    dpToPx(55)
             );
             params.setMargins(dpToPx(1), dpToPx(1), dpToPx(1), dpToPx(1));
             textView.setLayoutParams(params);
 
-            filaEncabezado.addView(textView);
+            filaEncabezadoNotas.addView(textView);
         }
 
-        tablaNotas.addView(filaEncabezado);
+        tablaNotas.addView(filaEncabezadoNotas);
     }
 
     private void crearFilaEstudiante(Estudiante estudiante) {
-        TableRow fila = new TableRow(this);
-
         int colorFondo = estudiante.getNumero() % 2 == 0
                 ? ContextCompat.getColor(this, R.color.gris_claro)
                 : ContextCompat.getColor(this, android.R.color.white);
-        fila.setBackgroundColor(colorFondo);
 
-        // Columna 1: Número
+        // --- FILA FIJA ---
+        TableRow filaFija = new TableRow(this);
+        filaFija.setBackgroundColor(colorFondo);
+
         TextView tvNumero = crearTextView(String.valueOf(estudiante.getNumero()));
-        tvNumero.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[0]), dpToPx(45)));
-        fila.addView(tvNumero);
+        tvNumero.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[0]), dpToPx(40)));
+        filaFija.addView(tvNumero);
 
-        // Columna 2: Nombre
         TextView tvNombre = crearTextView(estudiante.getNombre());
         tvNombre.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
-        tvNombre.setPadding(dpToPx(10), 0, dpToPx(10), 0);
-        tvNombre.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[1]), dpToPx(45)));
-        fila.addView(tvNombre);
+        tvNombre.setPadding(dpToPx(6), 0, dpToPx(6), 0);
+        tvNombre.setTextSize(11);
+        tvNombre.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[1]), dpToPx(40)));
+        filaFija.addView(tvNombre);
 
-        // Columnas 3-10: Notas de los 4 bimestres (EDITABLES AHORA)
-        for (int i = 0; i < 8; i++) {
+        tablaFija.addView(filaFija);
+
+        // --- FILA DE NOTAS ---
+        TableRow filaNotas = new TableRow(this);
+        filaNotas.setBackgroundColor(colorFondo);
+
+        for (int i = 0; i < clavesFirebase.length; i++) {
             String textoNota = estudiante.getNotaString(i);
-            int bimestre = (i / 2) + 1;
-            String tipo = (i % 2 == 0) ? "practicas" : "final";
 
-            EditText editText = crearEditText(textoNota, estudiante, bimestre, tipo);
-            editText.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[i + 2]), dpToPx(45)));
-            fila.addView(editText);
+            EditText editText = crearEditText(textoNota, estudiante, i);
+            editText.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[i + 2]), dpToPx(40)));
+            filaNotas.addView(editText);
         }
 
-        // Columna 11: Promedio
-        TextView tvPromedio = crearTextView(String.format("%.1f", estudiante.calcularPromedio()));
-        tvPromedio.setTextColor(ContextCompat.getColor(this, R.color.green));
-        tvPromedio.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvPromedio.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[10]), dpToPx(45)));
-        fila.addView(tvPromedio);
-
-        tablaNotas.addView(fila);
+        tablaNotas.addView(filaNotas);
     }
 
     private void crearFilaTotales() {
-        TableRow filaTotales = new TableRow(this);
-        filaTotales.setBackgroundColor(ContextCompat.getColor(this, R.color.color_secundario));
+        int colorFondo = ContextCompat.getColor(this, R.color.color_secundario);
 
-        // Celda 1: "TOTALES"
-        TextView tvTotales = crearTextView("TOTALES");
-        tvTotales.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[0]), dpToPx(45)));
-        filaTotales.addView(tvTotales);
+        // --- FILA TOTALES FIJA ---
+        TableRow filaTotalesFija = new TableRow(this);
+        filaTotalesFija.setBackgroundColor(colorFondo);
 
-        // Celda 2: Vacía
+        TextView tvTotales = crearTextView("PROMEDIOS");
+        tvTotales.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+        tvTotales.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvTotales.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[0]), dpToPx(40)));
+        filaTotalesFija.addView(tvTotales);
+
         TextView tvVacia = crearTextView("");
-        tvVacia.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[1]), dpToPx(45)));
-        filaTotales.addView(tvVacia);
+        tvVacia.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[1]), dpToPx(40)));
+        filaTotalesFija.addView(tvVacia);
 
-        // Calcular promedios por columna
-        double[] promediosColumnas = new double[8];
-        int[] contadores = new int[8];
+        tablaFija.addView(filaTotalesFija);
+
+        // --- FILA TOTALES DE NOTAS ---
+        TableRow filaTotalesNotas = new TableRow(this);
+        filaTotalesNotas.setBackgroundColor(colorFondo);
+
+        double[] promediosColumnas = new double[clavesFirebase.length];
+        int[] contadores = new int[clavesFirebase.length];
 
         for (Estudiante estudiante : listaEstudiantes) {
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < clavesFirebase.length; i++) {
                 double nota = estudiante.getNotaValor(i);
                 if (nota != -1) {
                     promediosColumnas[i] += nota;
@@ -290,60 +412,40 @@ public class PrimeroActivity extends AppCompatActivity {
             }
         }
 
-        // Celdas 3-10: Promedios por columna
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < clavesFirebase.length; i++) {
             double promedio = contadores[i] > 0 ? promediosColumnas[i] / contadores[i] : 0;
             TextView tvPromColumna = crearTextView(String.format("%.1f", promedio));
             tvPromColumna.setTextColor(ContextCompat.getColor(this, android.R.color.white));
             tvPromColumna.setTypeface(null, android.graphics.Typeface.BOLD);
-            tvPromColumna.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[i + 2]), dpToPx(45)));
-            filaTotales.addView(tvPromColumna);
+            tvPromColumna.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[i + 2]), dpToPx(40)));
+            filaTotalesNotas.addView(tvPromColumna);
         }
 
-        // Celda 11: Promedio general
-        double promedioGeneral = 0;
-        int totalEstudiantesConNotas = 0;
-        for (Estudiante estudiante : listaEstudiantes) {
-            double promEstudiante = estudiante.calcularPromedio();
-            if (promEstudiante > 0) {
-                promedioGeneral += promEstudiante;
-                totalEstudiantesConNotas++;
-            }
-        }
-        promedioGeneral = totalEstudiantesConNotas > 0 ? promedioGeneral / totalEstudiantesConNotas : 0;
-
-        TextView tvPromGeneral = crearTextView(String.format("%.1f", promedioGeneral));
-        tvPromGeneral.setTextColor(ContextCompat.getColor(this, R.color.color_accent));
-        tvPromGeneral.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvPromGeneral.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchosColumnas[10]), dpToPx(45)));
-        filaTotales.addView(tvPromGeneral);
-
-        tablaNotas.addView(filaTotales);
+        tablaNotas.addView(filaTotalesNotas);
     }
 
     private TextView crearTextView(String texto) {
         TextView textView = new TextView(this);
         textView.setText(texto);
-        textView.setPadding(dpToPx(6), dpToPx(8), dpToPx(6), dpToPx(8));
-        textView.setTextSize(12);
+        textView.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
+        textView.setTextSize(11);
         textView.setGravity(Gravity.CENTER);
         textView.setSingleLine(true);
         return textView;
     }
 
-    private EditText crearEditText(String texto, Estudiante estudiante, int bimestre, String tipo) {
+    private EditText crearEditText(String texto, Estudiante estudiante, int indiceNota) {
         EditText editText = new EditText(this);
         editText.setText(texto);
-        editText.setPadding(dpToPx(6), dpToPx(8), dpToPx(6), dpToPx(8));
-        editText.setTextSize(12);
+        editText.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
+        editText.setTextSize(11);
         editText.setGravity(Gravity.CENTER);
         editText.setBackgroundResource(android.R.drawable.edit_text);
         editText.setInputType(android.text.InputType.TYPE_CLASS_NUMBER |
                 android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
         editText.setSingleLine(true);
-        editText.setEnabled(true); // ¡HABILITADO PARA EDICIÓN!
+        editText.setEnabled(true);
 
-        // Agregar listener para guardar cambios
         editText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -358,24 +460,17 @@ public class PrimeroActivity extends AppCompatActivity {
                     nuevoValor = "--";
                 }
 
-                // Guardar el cambio pendiente
-                String key = estudiante.getNombre() + "_" + cursoActual + "_B" + bimestre + "_" + tipo;
+                String key = estudiante.getKeyFirebase() + "_" + clavesFirebase[indiceNota];
                 Map<String, Object> cambio = new HashMap<>();
                 cambio.put("valor", nuevoValor);
-                cambio.put("estudiante", estudiante.getNombre());
-                cambio.put("bimestre", bimestre);
-                cambio.put("tipo", tipo);
+                cambio.put("estudianteKey", estudiante.getKeyFirebase());
+                cambio.put("indiceNota", indiceNota);
+                cambio.put("claveFirebase", clavesFirebase[indiceNota]);
                 cambiosPendientes.put(key, cambio);
 
-                // Actualizar el objeto Estudiante localmente
-                if (tipo.equals("practicas")) {
-                    estudiante.setNotaPracticas(bimestre, nuevoValor);
-                } else {
-                    estudiante.setNotaFinal(bimestre, nuevoValor);
-                }
+                estudiante.setNota(indiceNota, nuevoValor);
 
-                // Opcional: indicar que hay cambios sin guardar
-                tvTituloCurso.setText(cursoActual + " * " + listaEstudiantes.size() + " alumnos");
+                tvTituloCurso.setText("Primero C * " + listaEstudiantes.size() + " alumnos");
             }
         });
 
@@ -388,38 +483,36 @@ public class PrimeroActivity extends AppCompatActivity {
             return;
         }
 
-        Toast.makeText(this, "Guardando cambios...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Guardando cambios (" + cambiosPendientes.size() + ")...", Toast.LENGTH_SHORT).show();
 
         for (Map.Entry<String, Map<String, Object>> entry : cambiosPendientes.entrySet()) {
             Map<String, Object> cambio = entry.getValue();
-            String nombreEstudiante = (String) cambio.get("estudiante");
-            int bimestre = (int) cambio.get("bimestre");
-            String tipo = (String) cambio.get("tipo");
+            String estudianteKey = (String) cambio.get("estudianteKey");
+            String claveFirebase = (String) cambio.get("claveFirebase");
             String valor = (String) cambio.get("valor");
 
-            // Referencia: alumnos/[nombre]/[curso]/B[bimestre]/[tipo]
             DatabaseReference ref = databaseReference
-                    .child(nombreEstudiante)
-                    .child(cursoActual)
-                    .child("B" + bimestre)
-                    .child(tipo);
+                    .child(estudianteKey)
+                    .child("calificaciones")
+                    .child(claveFirebase);
 
-            ref.setValue(valor)
+            Object valorGuardar = valor.equals("--") ? null : valor;
+
+            ref.setValue(valorGuardar)
                     .addOnSuccessListener(aVoid -> {
-                        Log.d("Firebase", "Guardado: " + nombreEstudiante + " B" + bimestre + " " + tipo + " = " + valor);
+                        Log.d("Firebase", "Guardado: " + estudianteKey + " - " + claveFirebase + " = " + valor);
                     })
                     .addOnFailureListener(e -> {
                         Log.e("Firebase", "Error al guardar: " + e.getMessage());
                         Toast.makeText(PrimeroActivity.this,
-                                "Error al guardar: " + nombreEstudiante,
+                                "Error al guardar: " + estudianteKey,
                                 Toast.LENGTH_SHORT).show();
                     });
         }
 
-        // Limpiar cambios pendientes y actualizar título
         cambiosPendientes.clear();
-        tvTituloCurso.setText(cursoActual + " - " + listaEstudiantes.size() + " alumnos");
-        Toast.makeText(this, "Cambios guardados", Toast.LENGTH_SHORT).show();
+        tvTituloCurso.setText("Primero C - " + listaEstudiantes.size() + " alumnos");
+        Toast.makeText(this, "Cambios guardados exitosamente", Toast.LENGTH_SHORT).show();
     }
 
     private int dpToPx(int dp) {
@@ -430,30 +523,23 @@ public class PrimeroActivity extends AppCompatActivity {
     private static class Estudiante {
         private int numero;
         private String nombre;
-        private String[] notas = new String[8]; // Guardamos como String para mantener "--"
+        private String keyFirebase;
+        private String[] notas;
 
-        public Estudiante(int numero, String nombre) {
+        public Estudiante(int numero, String nombre, String keyFirebase) {
             this.numero = numero;
             this.nombre = nombre;
+            this.keyFirebase = keyFirebase;
+            this.notas = new String[25];
             for (int i = 0; i < notas.length; i++) {
                 notas[i] = "--";
             }
         }
 
-        public void setNotasBimestre(int bimestre, String practicas, String final_) {
-            int baseIndex = (bimestre - 1) * 2;
-            if (practicas != null) notas[baseIndex] = practicas;
-            if (final_ != null) notas[baseIndex + 1] = final_;
-        }
-
-        public void setNotaPracticas(int bimestre, String valor) {
-            int index = (bimestre - 1) * 2;
-            notas[index] = valor;
-        }
-
-        public void setNotaFinal(int bimestre, String valor) {
-            int index = (bimestre - 1) * 2 + 1;
-            notas[index] = valor;
+        public void setNota(int indice, String valor) {
+            if (indice >= 0 && indice < notas.length) {
+                notas[indice] = valor;
+            }
         }
 
         public String getNotaString(int indice) {
@@ -476,22 +562,6 @@ public class PrimeroActivity extends AppCompatActivity {
 
         public int getNumero() { return numero; }
         public String getNombre() { return nombre; }
-
-        public double calcularPromedio() {
-            double suma = 0;
-            int conteo = 0;
-
-            for (String notaStr : notas) {
-                try {
-                    double nota = Double.parseDouble(notaStr);
-                    suma += nota;
-                    conteo++;
-                } catch (NumberFormatException e) {
-                    // Ignorar "--"
-                }
-            }
-
-            return conteo > 0 ? suma / conteo : 0.0;
-        }
+        public String getKeyFirebase() { return keyFirebase; }
     }
 }

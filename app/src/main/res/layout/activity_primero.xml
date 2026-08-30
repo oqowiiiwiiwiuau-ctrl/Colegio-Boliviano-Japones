@@ -33,7 +33,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Primero de Secundaria - Matemáticas"
+            android:text="Primero C - Matemáticas"
             android:textSize="18sp"
             android:textColor="@android:color/white"
             android:textStyle="bold"
@@ -41,25 +41,57 @@
 
     </LinearLayout>
 
-    <!-- Contenedor principal con scroll horizontal y vertical -->
-    <ScrollView
+    <!-- Contenedor principal con dos tablas: una fija y una con scroll -->
+    <LinearLayout
+        android:id="@+id/contenedorPrincipal"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:orientation="horizontal">
 
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fillViewport="true">
+        <!-- TABLA FIJA (N° y NOMBRES) - SIN SCROLL HORIZONTAL -->
+        <ScrollView
+            android:id="@+id/scrollFijaVertical"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"
+            android:background="@android:color/white">
 
             <TableLayout
-                android:id="@+id/tablaNotas"
+                android:id="@+id/tablaFija"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content"
+                android:stretchColumns="false" />
+        </ScrollView>
+
+        <!-- TABLA DE NOTAS (CON SCROLL HORIZONTAL Y VERTICAL) -->
+        <HorizontalScrollView
+            android:id="@+id/scrollHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:scrollbars="horizontal|vertical"
+            android:background="@android:color/white">
+
+            <ScrollView
+                android:id="@+id/scrollVertical"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical">
+
+                <TableLayout
+                    android:id="@+id/tablaNotas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:stretchColumns="false" />
+            </ScrollView>
         </HorizontalScrollView>
+    </LinearLayout>
 
-
-    </ScrollView>
+    <!-- Línea divisoria inferior (opcional) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@color/curso_primero" />
 
 </LinearLayout>
