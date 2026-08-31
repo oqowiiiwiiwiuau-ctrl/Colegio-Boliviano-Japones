@@ -17,7 +17,6 @@
         android:elevation="8dp"
         android:gravity="center_vertical">
 
-        <!-- Botón de regreso -->
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/btnBack"
             android:layout_width="48dp"
@@ -27,7 +26,6 @@
             android:tint="@android:color/white"
             android:contentDescription="Regresar" />
 
-        <!-- Título del curso -->
         <TextView
             android:id="@+id/tvTituloCurso"
             android:layout_width="0dp"
@@ -39,9 +37,23 @@
             android:textStyle="bold"
             android:layout_marginStart="12dp" />
 
+        <!-- BOTÓN PARA AGREGAR COLUMNA -->
+        <!-- BOTÓN PARA AGREGAR COLUMNA - VERSIÓN SIN drawable -->
+        <Button
+            android:id="@+id/btnAgregarColumna"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="+ Columna"
+            android:background="@color/curso_primero"
+            android:textColor="@android:color/white"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:textSize="12sp"
+            android:elevation="2dp" />
+
     </LinearLayout>
 
-    <!-- Contenedor principal con dos tablas: una fija y una con scroll -->
+    <!-- Contenedor principal -->
     <LinearLayout
         android:id="@+id/contenedorPrincipal"
         android:layout_width="match_parent"
@@ -49,7 +61,7 @@
         android:layout_weight="1"
         android:orientation="horizontal">
 
-        <!-- TABLA FIJA (N° y NOMBRES) - SIN SCROLL HORIZONTAL -->
+        <!-- TABLA FIJA -->
         <ScrollView
             android:id="@+id/scrollFijaVertical"
             android:layout_width="wrap_content"
@@ -64,7 +76,7 @@
                 android:stretchColumns="false" />
         </ScrollView>
 
-        <!-- TABLA DE NOTAS (CON SCROLL HORIZONTAL Y VERTICAL) -->
+        <!-- TABLA DE NOTAS -->
         <HorizontalScrollView
             android:id="@+id/scrollHorizontal"
             android:layout_width="0dp"
@@ -87,11 +99,5 @@
             </ScrollView>
         </HorizontalScrollView>
     </LinearLayout>
-
-    <!-- Línea divisoria inferior (opcional) -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="@color/curso_primero" />
 
 </LinearLayout>
