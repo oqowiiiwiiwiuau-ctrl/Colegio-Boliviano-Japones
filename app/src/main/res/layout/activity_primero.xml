@@ -1,59 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/fondo_app">
 
-    <!-- Encabezado fijo -->
+    <!-- =========================================== -->
+    <!-- ENCABEZADO CON INFORMACIÓN DEL MAESTRO      -->
+    <!-- =========================================== -->
     <LinearLayout
-        android:id="@+id/headerLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:background="@color/curso_primero"
-        android:padding="12dp"
         android:elevation="8dp"
-        android:gravity="center_vertical">
+        android:padding="12dp">
 
-        <androidx.appcompat.widget.AppCompatImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_arrow_back"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="@android:color/white"
-            android:contentDescription="Regresar" />
-
-        <TextView
-            android:id="@+id/tvTituloCurso"
-            android:layout_width="0dp"
+        <!-- Primera fila: Curso y Gestión -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Primero C - Matemáticas"
-            android:textSize="18sp"
-            android:textColor="@android:color/white"
-            android:textStyle="bold"
-            android:layout_marginStart="12dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <!-- BOTÓN PARA AGREGAR COLUMNA -->
-        <!-- BOTÓN PARA AGREGAR COLUMNA - VERSIÓN SIN drawable -->
-        <Button
-            android:id="@+id/btnAgregarColumna"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="+ Columna"
-            android:background="@color/curso_primero"
-            android:textColor="@android:color/white"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:textSize="12sp"
-            android:elevation="2dp" />
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_arrow_back"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@android:color/white"
+                android:contentDescription="Regresar" />
 
+            <TextView
+                android:id="@+id/tvTituloCurso"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="PRIMERO C"
+                android:textSize="22sp"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:layout_marginStart="12dp" />
+
+            <TextView
+                android:id="@+id/tvGestion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gestión 2026"
+                android:textSize="14sp"
+                android:background="@android:color/white"
+                android:textColor="@color/curso_primero"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:backgroundTint="#FFFFFF"
+                android:elevation="2dp" />
+        </LinearLayout>
+
+        <!-- Segunda fila: Maestro y Área -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvMaestro"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Prof. Marcos Antonio Ezequiel Ramos Flores"
+                android:textSize="14sp"
+                android:textColor="@android:color/white"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvArea"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Área: Matemática"
+                android:textSize="14sp"
+                android:textColor="@android:color/white"
+                android:background="@color/color_secundario"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:elevation="2dp" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- Contenedor principal -->
+    <!-- =========================================== -->
+    <!-- CONTENEDOR PRINCIPAL CON TABLAS             -->
+    <!-- =========================================== -->
     <LinearLayout
         android:id="@+id/contenedorPrincipal"
         android:layout_width="match_parent"
@@ -61,7 +103,7 @@
         android:layout_weight="1"
         android:orientation="horizontal">
 
-        <!-- TABLA FIJA -->
+        <!-- TABLA FIJA: N° y NOMBRES -->
         <ScrollView
             android:id="@+id/scrollFijaVertical"
             android:layout_width="wrap_content"
@@ -76,7 +118,7 @@
                 android:stretchColumns="false" />
         </ScrollView>
 
-        <!-- TABLA DE NOTAS -->
+        <!-- TABLA DE NOTAS CON SCROLL -->
         <HorizontalScrollView
             android:id="@+id/scrollHorizontal"
             android:layout_width="0dp"

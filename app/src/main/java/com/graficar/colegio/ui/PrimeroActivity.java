@@ -6,7 +6,6 @@ import android.text.Editable;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
@@ -34,7 +33,7 @@ import java.util.Map;
 
 public class PrimeroActivity extends AppCompatActivity {
     // ============================================================
-    // 1. COMPONENTES UI
+    // COMPONENTES UI
     // ============================================================
     private TableLayout tablaNotas;
     private TableLayout tablaFija;
@@ -42,308 +41,99 @@ public class PrimeroActivity extends AppCompatActivity {
     private HorizontalScrollView scrollHorizontal;
     private ScrollView scrollFijaVertical;
     private TextView tvTituloCurso;
-    private LinearLayout contenedorPrincipal;
-    private Button btnAgregarColumna;
 
     // ============================================================
-    // 2. DATOS PRINCIPALES
+    // DATOS PRINCIPALES
     // ============================================================
     private List<Estudiante> listaEstudiantes;
     private DatabaseReference databaseReference;
     private Map<String, Map<String, Object>> cambiosPendientes = new HashMap<>();
-    private String cursoActual = "Matemática";
 
     // ============================================================
-    // 3. CONFIGURACIÓN DE COLUMNAS
+    // CONFIGURACIÓN DE ANCHOS (¡AQUÍ SE AJUSTAN TAMAÑOS!)
     // ============================================================
-    private List<ColumnaConfig> columnasConfig = new ArrayList<>();
-
-    private void inicializarColumnas() {
-        // ============================================================
-        // SECCIÓN 1: COLUMNAS FIJAS (SIEMPRE VISIBLES)
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "N°",
-                25,
-                TipoColumna.NUMERO,
-                null,
-                null
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "APELLIDOS Y NOMBRES",
-                170,
-                TipoColumna.TEXTO,
-                null,
-                null
-        ));
-
-        // ============================================================
-        // SECCIÓN 2: DIMENSIÓN 1 - SELLOS Y CARÁTULAS
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "SELLOS DE\nAGENDA",
-                60,
-                TipoColumna.NOTA,
-                "sellosAgenda",
-                new int[]{0, 1, 2}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "NOTA",
-                60,
-                TipoColumna.NOTA,
-                "nota",
-                new int[]{0, 1, 2}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "CARÁTULAS",
-                60,
-                TipoColumna.NOTA,
-                "caratulas",
-                new int[]{0, 1, 2}
-        ));
-
-        // ============================================================
-        // SECCIÓN 3: PROMEDIO DIMENSIÓN 1 (5 pts)
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "PROMEDIO\nDIMENSIÓN\n(5 pts)",
-                80,
-                TipoColumna.PROMEDIO,
-                "promedioDimension5",
-                new int[]{0, 1, 2}
-        ));
-
-        // ============================================================
-        // SECCIÓN 4: DIMENSIÓN 2 - APUNTES Y MAPAS
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "Nº SELLOS\nAPUNTES",
-                80,
-                TipoColumna.NOTA,
-                "nroSellosApuntes",
-                new int[]{3, 4, 5, 6, 7, 8}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "PUNTAJE DE\nAPUNTES",
-                90,
-                TipoColumna.NOTA,
-                "puntajeApuntes",
-                new int[]{3, 4, 5, 6, 7, 8}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "MAPA CONCEP.\nDE TRIÁNGULOS",
-                90,
-                TipoColumna.NOTA,
-                "mapaConceptoTriangulos",
-                new int[]{3, 4, 5, 6, 7, 8}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "EV. PLANO\nCARTESIANO",
-                90,
-                TipoColumna.NOTA,
-                "evPlanoCartesiano",
-                new int[]{3, 4, 5, 6, 7, 8}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "LECTURA\nMATEMÁTICA",
-                90,
-                TipoColumna.NOTA,
-                "lecturaMatematica",
-                new int[]{3, 4, 5, 6, 7, 8}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "EVALUACIÓN\nTRIMESTRAL",
-                90,
-                TipoColumna.NOTA,
-                "evaluacionTrimestral",
-                new int[]{3, 4, 5, 6, 7, 8}
-        ));
-
-        // ============================================================
-        // SECCIÓN 5: PROMEDIO DIMENSIÓN 2 (45 pts)
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "PROMEDIO\nDIMENSIÓN\n(45 pts)",
-                90,
-                TipoColumna.PROMEDIO_PONDERADO,
-                "promedioDimension45",
-                null
-        ));
-
-        // ============================================================
-        // SECCIÓN 6: DIMENSIÓN 3 - PRÁCTICAS
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "Nº SELLOS\nPRÁCTICAS",
-                90,
-                TipoColumna.NOTA,
-                "nroSellosPracticas",
-                new int[]{10, 11, 12, 13, 14}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "PUNTAJE DE\nPRÁCTICAS",
-                90,
-                TipoColumna.NOTA,
-                "puntajePracticas",
-                new int[]{10, 11, 12, 13, 14}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "PRACTICAS DE\nLIBRO SUDOKU",
-                100,
-                TipoColumna.NOTA,
-                "practicasLibroSudoku",
-                new int[]{10, 11, 12, 13, 14}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "EV. DE ANGULOS\nRECTOS Y LLANOS",
-                100,
-                TipoColumna.NOTA,
-                "evAngulosRectosLlanos",
-                new int[]{10, 11, 12, 13, 14}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "DIV. NUM.\nENTEROS",
-                90,
-                TipoColumna.NOTA,
-                "divNumerosEnteros",
-                new int[]{10, 11, 12, 13, 14}
-        ));
-
-        // ============================================================
-        // SECCIÓN 7: PROMEDIO DIMENSIÓN 3 (40 pts)
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "PROMEDIO\nDIMENSIÓN\n(40 pts)",
-                90,
-                TipoColumna.PROMEDIO_PONDERADO,
-                "promedioDimension40",
-                null
-        ));
-
-        // ============================================================
-        // SECCIÓN 8: DIMENSIÓN 4 - AULA ABIERTA Y DECIDIR
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "AULA\nABIERTA",
-                80,
-                TipoColumna.NOTA,
-                "aulaAbierta",
-                new int[]{16, 17}
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "CALIFICACIÓN\nDEL DECIDIR",
-                90,
-                TipoColumna.NOTA,
-                "calificacionDecidir",
-                new int[]{16, 17}
-        ));
-
-        // ============================================================
-        // SECCIÓN 9: PROMEDIO DIMENSIÓN 4 (5 pts)
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "PROMEDIO\nDIMENSIÓN\n(5 pts)",
-                90,
-                TipoColumna.PROMEDIO,
-                "promedioDimension5_2",
-                new int[]{16, 17}
-        ));
-
-        // ============================================================
-        // SECCIÓN 10: TOTALES
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "TOTAL\n(95 pts)",
-                80,
-                TipoColumna.TOTAL,
-                "total95",
-                null
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "AUTO-\nEVALUACIÓN",
-                80,
-                TipoColumna.NOTA,
-                "autoevaluacion",
-                null
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "NOTA\nPARCIAL",
-                80,
-                TipoColumna.NOTA,
-                "notaParcial",
-                null
-        ));
-
-        columnasConfig.add(new ColumnaConfig(
-                "PONDERA-\ncIONES",
-                80,
-                TipoColumna.NOTA,
-                "ponderaciones",
-                null
-        ));
-
-        // ============================================================
-        // SECCIÓN 11: NOTA FINAL
-        // ============================================================
-        columnasConfig.add(new ColumnaConfig(
-                "NOTA\nTRIMESTRAL\n(100 pts)",
-                90,
-                TipoColumna.NOTA_FINAL,
-                "notaTrimestral100",
-                null
-        ));
-    }
+    private static final int ANCHO_NUMERO = 25;          // Ancho de columna N°
+    private static final int ANCHO_NOMBRE = 170;         // Ancho de columna APELLIDOS Y NOMBRES
+    private static final int ANCHO_PROMEDIO = 90;        // Ancho de columna de promedio (se puede ajustar por grupo)
 
     // ============================================================
-    // 4. ENUM DE TIPOS DE COLUMNA
+    // ESTRUCTURA DE COLUMNAS
     // ============================================================
-    private enum TipoColumna {
-        NUMERO,
-        TEXTO,
-        NOTA,
-        PROMEDIO,
-        PROMEDIO_PONDERADO,
-        TOTAL,
-        NOTA_FINAL
-    }
+    private static class GrupoColumnas {
+        String nombre;
+        List<ColumnaHija> columnasHijas;
+        String clavePromedio;      // Clave en Firebase para guardar el promedio
+        int anchoPromedio;         // Ancho de la columna de promedio (si es 0 usa ANCHO_PROMEDIO)
 
-    // ============================================================
-    // 5. CLASE DE CONFIGURACIÓN DE COLUMNA
-    // ============================================================
-    private static class ColumnaConfig {
-        String titulo;
-        int ancho;
-        TipoColumna tipo;
-        String claveFirebase;
-        int[] indicesDependientes;
-
-        public ColumnaConfig(String titulo, int ancho, TipoColumna tipo,
-                             String claveFirebase, int[] indicesDependientes) {
-            this.titulo = titulo;
-            this.ancho = ancho;
-            this.tipo = tipo;
-            this.claveFirebase = claveFirebase;
-            this.indicesDependientes = indicesDependientes;
+        public GrupoColumnas(String nombre, List<ColumnaHija> columnasHijas, String clavePromedio, int anchoPromedio) {
+            this.nombre = nombre;
+            this.columnasHijas = columnasHijas;
+            this.clavePromedio = clavePromedio;
+            this.anchoPromedio = anchoPromedio > 0 ? anchoPromedio : ANCHO_PROMEDIO;
         }
     }
 
+    private static class ColumnaHija {
+        String titulo;
+        int ancho;
+        String claveFirebase;
+
+        public ColumnaHija(String titulo, int ancho, String claveFirebase) {
+            this.titulo = titulo;
+            this.ancho = ancho;
+            this.claveFirebase = claveFirebase;
+        }
+    }
+
+    private List<GrupoColumnas> grupos = new ArrayList<>();
+
     // ============================================================
-    // 6. CLASE ESTUDIANTE
+    // CONFIGURACIÓN DE GRUPOS Y COLUMNAS (¡AQUÍ SE AGREGAN/MODIFICAN!)
+    // ============================================================
+    private void inicializarEstructura() {
+        // GRUPO SER
+        List<ColumnaHija> columnasSer = new ArrayList<>();
+        columnasSer.add(new ColumnaHija("CARÁTULAS", 80, "caratulas"));
+        columnasSer.add(new ColumnaHija("AGENDA", 80, "sellosAgenda"));
+        grupos.add(new GrupoColumnas("SER", columnasSer, "promedioSer", 90));
+
+        // GRUPO SABER
+        List<ColumnaHija> columnasSaber = new ArrayList<>();
+        columnasSaber.add(new ColumnaHija("SELLOS APUNTES", 80, "nroSellosApuntes"));
+        columnasSaber.add(new ColumnaHija("PUNTAJE APUNTES", 80, "puntajeApuntes"));
+        columnasSaber.add(new ColumnaHija("MAPA CONCEPTO", 80, "mapaConceptoTriangulos"));
+        columnasSaber.add(new ColumnaHija("PLANO CARTESIANO", 80, "evPlanoCartesiano"));
+        columnasSaber.add(new ColumnaHija("LECTURA MATEMÁTICA", 80, "lecturaMatematica"));
+        columnasSaber.add(new ColumnaHija("EV. TRIMESTRAL", 80, "evaluacionTrimestral"));
+        grupos.add(new GrupoColumnas("SABER", columnasSaber, "promedioSaber", 90));
+
+        // GRUPO HACER
+        List<ColumnaHija> columnasHacer = new ArrayList<>();
+        columnasHacer.add(new ColumnaHija("SELLOS PRÁCTICAS", 80, "nroSellosPracticas"));
+        columnasHacer.add(new ColumnaHija("PUNTAJE PRÁCTICAS", 80, "puntajePracticas"));
+        columnasHacer.add(new ColumnaHija("LIBRO SUDOKU", 80, "practicasLibroSudoku"));
+        columnasHacer.add(new ColumnaHija("PRACTICA EMP. N1", 80, "practicaEmpastado1"));
+        columnasHacer.add(new ColumnaHija("PRACTICA EMP. N2", 80, "practicaEmpastado2"));
+        columnasHacer.add(new ColumnaHija("REFORZAMIENTO", 80, "reforzamiento"));
+        grupos.add(new GrupoColumnas("HACER", columnasHacer, "promedioHacer", 90));
+
+        // GRUPO DECIDIR
+        List<ColumnaHija> columnasDecidir = new ArrayList<>();
+        columnasDecidir.add(new ColumnaHija("AULA ABIERTA", 80, "aulaAbierta"));
+        columnasDecidir.add(new ColumnaHija("CALIFICACIÓN DECIDIR", 80, "calificacionDecidir"));
+        grupos.add(new GrupoColumnas("DECIDIR", columnasDecidir, "promedioDecidir", 90));
+
+        // GRUPO TOTALES (sin promedio)
+        List<ColumnaHija> columnasTotales = new ArrayList<>();
+        columnasTotales.add(new ColumnaHija("AUTOEVALUACIÓN", 80, "autoevaluacion"));
+        columnasTotales.add(new ColumnaHija("NOTA PARCIAL", 80, "notaParcial"));
+        columnasTotales.add(new ColumnaHija("PONDERACIONES", 80, "ponderaciones"));
+        columnasTotales.add(new ColumnaHija("NOTA TRIMESTRAL", 90, "notaTrimestral100"));
+        grupos.add(new GrupoColumnas("TOTALES", columnasTotales, null, 0));
+    }
+
+    // ============================================================
+    // CLASE ESTUDIANTE
     // ============================================================
     private static class Estudiante {
         private int numero;
@@ -376,75 +166,20 @@ public class PrimeroActivity extends AppCompatActivity {
             }
         }
 
-        // ============================================================
-        // 7. FUNCIONES DE CÁLCULO
-        // ============================================================
-
-        public double calcularPromedioSimple(List<String> claves) {
-            double suma = 0;
-            int count = 0;
-            for (String clave : claves) {
-                double valor = getNotaValor(clave);
-                if (valor >= 0) {
-                    suma += valor;
-                    count++;
-                }
-            }
-            return count > 0 ? suma / count : 0;
-        }
-
-        public double calcularPromedioPonderado(Map<String, Double> pesos) {
-            double sumaPonderada = 0;
-            double sumaPesos = 0;
-            for (Map.Entry<String, Double> entry : pesos.entrySet()) {
-                double valor = getNotaValor(entry.getKey());
-                if (valor >= 0) {
-                    sumaPonderada += valor * entry.getValue();
-                    sumaPesos += entry.getValue();
-                }
-            }
-            return sumaPesos > 0 ? sumaPonderada / sumaPesos : 0;
-        }
-
-        public double calcularTotal(List<String> claves) {
-            double suma = 0;
-            for (String clave : claves) {
-                double valor = getNotaValor(clave);
-                if (valor >= 0) {
-                    suma += valor;
-                }
-            }
-            return suma;
-        }
-
-        public double calcularNotaFinal() {
-            double suma = 0;
-            int count = 0;
-            for (String clave : notas.keySet()) {
-                double valor = getNotaValor(clave);
-                if (valor >= 0) {
-                    suma += valor;
-                    count++;
-                }
-            }
-            return count > 0 ? suma / count : 0;
-        }
-
         public int getNumero() { return numero; }
         public String getNombre() { return nombre; }
         public String getKeyFirebase() { return keyFirebase; }
-        public Map<String, String> getNotas() { return notas; }
     }
 
     // ============================================================
-    // 8. CICLO DE VIDA - onCreate
+    // CICLO DE VIDA
     // ============================================================
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_primero);
 
-        inicializarColumnas();
+        inicializarEstructura();
         inicializarViews();
         configurarListeners();
         inicializarFirebase();
@@ -457,12 +192,9 @@ public class PrimeroActivity extends AppCompatActivity {
         scrollHorizontal = findViewById(R.id.scrollHorizontal);
         scrollFijaVertical = findViewById(R.id.scrollFijaVertical);
         tvTituloCurso = findViewById(R.id.tvTituloCurso);
-        contenedorPrincipal = findViewById(R.id.contenedorPrincipal);
-        btnAgregarColumna = findViewById(R.id.btnAgregarColumna);
     }
 
     private void configurarListeners() {
-        // Sincronizar scroll vertical
         scrollVertical.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             if (scrollFijaVertical != null) {
                 scrollFijaVertical.scrollTo(0, scrollY);
@@ -475,111 +207,19 @@ public class PrimeroActivity extends AppCompatActivity {
             }
         });
 
-        // Botón de guardar
         findViewById(R.id.btnBack).setOnClickListener(v -> {
             guardarTodosLosCambios();
             finish();
         });
 
-        // Long press en título para guardar
         tvTituloCurso.setOnLongClickListener(v -> {
             guardarTodosLosCambios();
             return true;
         });
-
-        // Botón para agregar columna
-        btnAgregarColumna.setOnClickListener(v -> {
-            mostrarDialogoAgregarColumna();
-        });
     }
 
     // ============================================================
-    // 9. DIÁLOGO PARA AGREGAR COLUMNA
-    // ============================================================
-    private void mostrarDialogoAgregarColumna() {
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-        builder.setTitle("Agregar Nueva Columna");
-
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 40, 50, 10);
-
-        final EditText inputNombre = new EditText(this);
-        inputNombre.setHint("Nombre de la columna");
-        layout.addView(inputNombre);
-
-        final EditText inputClave = new EditText(this);
-        inputClave.setHint("Clave Firebase (ej: nuevaNota)");
-        layout.addView(inputClave);
-
-        final android.widget.Spinner spinnerTipo = new android.widget.Spinner(this);
-        String[] tipos = {"NOTA", "PROMEDIO", "PROMEDIO_PONDERADO", "TOTAL"};
-        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_item, tipos);
-        spinnerTipo.setAdapter(adapter);
-        layout.addView(spinnerTipo);
-
-        builder.setView(layout);
-
-        builder.setPositiveButton("Agregar", (dialog, which) -> {
-            String nombre = inputNombre.getText().toString().trim();
-            String clave = inputClave.getText().toString().trim();
-            String tipoStr = spinnerTipo.getSelectedItem().toString();
-
-            if (!nombre.isEmpty() && !clave.isEmpty()) {
-                agregarNuevaColumna(nombre, clave, tipoStr);
-            } else {
-                Toast.makeText(this, "Complete todos los campos", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        builder.setNegativeButton("Cancelar", null);
-        builder.show();
-    }
-
-    // ============================================================
-    // 10. FUNCIÓN PARA AGREGAR COLUMNA
-    // ============================================================
-    private void agregarNuevaColumna(String nombre, String clave, String tipoStr) {
-        TipoColumna tipo;
-        switch (tipoStr) {
-            case "PROMEDIO":
-                tipo = TipoColumna.PROMEDIO;
-                break;
-            case "PROMEDIO_PONDERADO":
-                tipo = TipoColumna.PROMEDIO_PONDERADO;
-                break;
-            case "TOTAL":
-                tipo = TipoColumna.TOTAL;
-                break;
-            default:
-                tipo = TipoColumna.NOTA;
-                break;
-        }
-
-        ColumnaConfig nuevaColumna = new ColumnaConfig(
-                nombre,
-                80,
-                tipo,
-                clave,
-                null
-        );
-
-        int posicionInsercion = columnasConfig.size() - 2;
-        columnasConfig.add(posicionInsercion, nuevaColumna);
-
-        Toast.makeText(this, "Columna agregada: " + nombre, Toast.LENGTH_SHORT).show();
-
-        if (listaEstudiantes != null) {
-            for (Estudiante estudiante : listaEstudiantes) {
-                estudiante.setNota(clave, "--");
-            }
-            crearTablas();
-        }
-    }
-
-    // ============================================================
-    // 11. FIREBASE - CARGA DE DATOS
+    // FIREBASE
     // ============================================================
     private void inicializarFirebase() {
         try {
@@ -608,15 +248,23 @@ public class PrimeroActivity extends AppCompatActivity {
                     Estudiante estudiante = new Estudiante(contador, nombreMostrar, nombreAlumno);
 
                     DataSnapshot calificacionesSnapshot = alumnoSnapshot.child("calificaciones");
-
                     if (calificacionesSnapshot.exists()) {
-                        for (ColumnaConfig columna : columnasConfig) {
-                            if (columna.claveFirebase != null &&
-                                    columna.tipo == TipoColumna.NOTA) {
+                        for (GrupoColumnas grupo : grupos) {
+                            // Cargar hijas
+                            for (ColumnaHija columna : grupo.columnasHijas) {
                                 DataSnapshot notaSnapshot = calificacionesSnapshot.child(columna.claveFirebase);
                                 if (notaSnapshot.exists()) {
                                     Object valor = notaSnapshot.getValue();
                                     estudiante.setNota(columna.claveFirebase,
+                                            valor != null ? valor.toString() : "--");
+                                }
+                            }
+                            // Cargar promedio si existe
+                            if (grupo.clavePromedio != null) {
+                                DataSnapshot promSnapshot = calificacionesSnapshot.child(grupo.clavePromedio);
+                                if (promSnapshot.exists()) {
+                                    Object valor = promSnapshot.getValue();
+                                    estudiante.setNota(grupo.clavePromedio,
                                             valor != null ? valor.toString() : "--");
                                 }
                             }
@@ -628,7 +276,7 @@ public class PrimeroActivity extends AppCompatActivity {
                 }
 
                 runOnUiThread(() -> {
-                    tvTituloCurso.setText("Primero C - " + listaEstudiantes.size() + " alumnos");
+                    tvTituloCurso.setText("PRIMERO C - " + listaEstudiantes.size() + " alumnos");
                     crearTablas();
                     Toast.makeText(PrimeroActivity.this,
                             "Se cargaron " + listaEstudiantes.size() + " estudiantes",
@@ -649,7 +297,7 @@ public class PrimeroActivity extends AppCompatActivity {
     }
 
     // ============================================================
-    // 12. CREACIÓN DE TABLAS
+    // CREACIÓN DE TABLAS
     // ============================================================
     private void crearTablas() {
         tablaNotas.removeAllViews();
@@ -660,7 +308,7 @@ public class PrimeroActivity extends AppCompatActivity {
             return;
         }
 
-        crearFilaEncabezados();
+        crearEncabezados();
         for (Estudiante estudiante : listaEstudiantes) {
             crearFilaEstudiante(estudiante);
         }
@@ -676,315 +324,289 @@ public class PrimeroActivity extends AppCompatActivity {
         tablaNotas.addView(tvMensaje);
     }
 
-    private void crearFilaEncabezados() {
-        List<ColumnaConfig> columnasDatos = new ArrayList<>();
-        for (int i = 2; i < columnasConfig.size(); i++) {
-            columnasDatos.add(columnasConfig.get(i));
-        }
+    // ============================================================
+    // ENCABEZADOS
+    // ============================================================
+    private void crearEncabezados() {
+        // FILA 1: Nombres de grupos (con ancho total incluyendo promedio)
+        TableRow filaGrupos = new TableRow(this);
+        filaGrupos.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
+        filaGrupos.setGravity(Gravity.CENTER);
 
-        // --- ENCABEZADO PARA TABLA FIJA ---
+        // Espacios para N° y NOMBRE (vacíos)
+        TextView tvVacio1 = new TextView(this);
+        tvVacio1.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(35)));
+        filaGrupos.addView(tvVacio1);
+
+        TextView tvVacio2 = new TextView(this);
+        tvVacio2.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(35)));
+        filaGrupos.addView(tvVacio2);
+
+        for (GrupoColumnas grupo : grupos) {
+            int anchoTotal = 0;
+            for (ColumnaHija columna : grupo.columnasHijas) {
+                anchoTotal += columna.ancho;
+            }
+            // Si tiene promedio, sumar su ancho
+            if (grupo.clavePromedio != null) {
+                anchoTotal += grupo.anchoPromedio;
+            }
+            TextView tvGrupo = new TextView(this);
+            tvGrupo.setText(grupo.nombre);
+            tvGrupo.setTextSize(14);
+            tvGrupo.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+            tvGrupo.setTypeface(null, android.graphics.Typeface.BOLD);
+            tvGrupo.setGravity(Gravity.CENTER);
+            tvGrupo.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
+            tvGrupo.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchoTotal), dpToPx(35)));
+            filaGrupos.addView(tvGrupo);
+        }
+        tablaNotas.addView(filaGrupos);
+
+        // FILA 1 (fija): N° y NOMBRE
         TableRow filaEncabezadoFija = new TableRow(this);
         filaEncabezadoFija.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
 
-        TextView tvNumero = crearTextViewEncabezado("N°", false);
-        TableRow.LayoutParams paramsNumero = new TableRow.LayoutParams(
-                dpToPx(columnasConfig.get(0).ancho), dpToPx(55));
-        paramsNumero.setMargins(dpToPx(1), dpToPx(1), dpToPx(1), dpToPx(1));
-        tvNumero.setLayoutParams(paramsNumero);
+        TextView tvNumero = new TextView(this);
+        tvNumero.setText("N°");
+        tvNumero.setTextSize(12);
+        tvNumero.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+        tvNumero.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvNumero.setGravity(Gravity.CENTER);
+        tvNumero.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(35)));
         filaEncabezadoFija.addView(tvNumero);
 
-        TextView tvNombre = crearTextViewEncabezado("APELLIDOS Y NOMBRES", false);
-        TableRow.LayoutParams paramsNombre = new TableRow.LayoutParams(
-                dpToPx(columnasConfig.get(1).ancho), dpToPx(55));
-        paramsNombre.setMargins(dpToPx(1), dpToPx(1), dpToPx(1), dpToPx(1));
-        tvNombre.setLayoutParams(paramsNombre);
-        filaEncabezadoFija.addView(tvNombre);
+        TextView tvApellidos = new TextView(this);
+        tvApellidos.setText("APELLIDOS Y NOMBRES");
+        tvApellidos.setTextSize(12);
+        tvApellidos.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+        tvApellidos.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvApellidos.setGravity(Gravity.CENTER);
+        tvApellidos.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(35)));
+        filaEncabezadoFija.addView(tvApellidos);
 
         tablaFija.addView(filaEncabezadoFija);
 
-        // --- ENCABEZADO PARA TABLA DE NOTAS ---
-        TableRow filaEncabezadoNotas = new TableRow(this);
-        filaEncabezadoNotas.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
+        // FILA 2: Nombres de columnas hijas + promedio
+        TableRow filaColumnas = new TableRow(this);
+        filaColumnas.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
 
-        for (ColumnaConfig columna : columnasDatos) {
-            TextView textView = crearTextViewEncabezado(columna.titulo, true);
-            TableRow.LayoutParams params = new TableRow.LayoutParams(
-                    dpToPx(columna.ancho), dpToPx(55));
-            params.setMargins(dpToPx(1), dpToPx(1), dpToPx(1), dpToPx(1));
-            textView.setLayoutParams(params);
-            filaEncabezadoNotas.addView(textView);
+        for (GrupoColumnas grupo : grupos) {
+            // Columnas hijas
+            for (ColumnaHija columna : grupo.columnasHijas) {
+                TextView tvCol = new TextView(this);
+                tvCol.setText(columna.titulo);
+                tvCol.setTextSize(10);
+                tvCol.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+                tvCol.setGravity(Gravity.CENTER);
+                tvCol.setLayoutParams(new TableRow.LayoutParams(dpToPx(columna.ancho), dpToPx(30)));
+                filaColumnas.addView(tvCol);
+            }
+            // Columna de promedio (si existe)
+            if (grupo.clavePromedio != null) {
+                TextView tvProm = new TextView(this);
+                tvProm.setText("PROMEDIO");
+                tvProm.setTextSize(10);
+                tvProm.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+                tvProm.setTypeface(null, android.graphics.Typeface.BOLD);
+                tvProm.setGravity(Gravity.CENTER);
+                tvProm.setLayoutParams(new TableRow.LayoutParams(dpToPx(grupo.anchoPromedio), dpToPx(30)));
+                filaColumnas.addView(tvProm);
+            }
         }
+        tablaNotas.addView(filaColumnas);
 
-        tablaNotas.addView(filaEncabezadoNotas);
+        // FILA 2 (fija): vacía (para alinear)
+        TableRow filaEncabezadoFija2 = new TableRow(this);
+        filaEncabezadoFija2.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
+        TextView tvVacioF1 = new TextView(this);
+        tvVacioF1.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(30)));
+        filaEncabezadoFija2.addView(tvVacioF1);
+        TextView tvVacioF2 = new TextView(this);
+        tvVacioF2.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(30)));
+        filaEncabezadoFija2.addView(tvVacioF2);
+        tablaFija.addView(filaEncabezadoFija2);
     }
 
-    private TextView crearTextViewEncabezado(String texto, boolean multilinea) {
-        TextView textView = new TextView(this);
-        textView.setText(texto);
-        textView.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
-        textView.setTextColor(ContextCompat.getColor(this, android.R.color.white));
-        textView.setTextSize(11);
-        textView.setTypeface(null, android.graphics.Typeface.BOLD);
-        textView.setGravity(Gravity.CENTER);
-        if (multilinea && texto.contains("\n")) {
-            textView.setSingleLine(false);
-            textView.setMaxLines(3);
-        }
-        return textView;
-    }
-
+    // ============================================================
+    // FILAS DE ESTUDIANTES
+    // ============================================================
     private void crearFilaEstudiante(Estudiante estudiante) {
-        List<ColumnaConfig> columnasDatos = new ArrayList<>();
-        for (int i = 2; i < columnasConfig.size(); i++) {
-            columnasDatos.add(columnasConfig.get(i));
-        }
-
         int colorFondo = estudiante.getNumero() % 2 == 0
                 ? ContextCompat.getColor(this, R.color.gris_claro)
                 : ContextCompat.getColor(this, android.R.color.white);
 
-        // --- FILA FIJA ---
+        // FILA FIJA: N° y NOMBRE
         TableRow filaFija = new TableRow(this);
         filaFija.setBackgroundColor(colorFondo);
 
-        TextView tvNumero = crearTextViewSimple(String.valueOf(estudiante.getNumero()));
-        tvNumero.setLayoutParams(new TableRow.LayoutParams(
-                dpToPx(columnasConfig.get(0).ancho), dpToPx(40)));
+        TextView tvNumero = new TextView(this);
+        tvNumero.setText(String.valueOf(estudiante.getNumero()));
+        tvNumero.setTextSize(12);
+        tvNumero.setGravity(Gravity.CENTER);
+        tvNumero.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(35)));
         filaFija.addView(tvNumero);
 
-        TextView tvNombre = crearTextViewSimple(estudiante.getNombre());
-        tvNombre.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
-        tvNombre.setPadding(dpToPx(6), 0, dpToPx(6), 0);
+        TextView tvNombre = new TextView(this);
+        tvNombre.setText(estudiante.getNombre());
         tvNombre.setTextSize(11);
-        tvNombre.setLayoutParams(new TableRow.LayoutParams(
-                dpToPx(columnasConfig.get(1).ancho), dpToPx(40)));
+        tvNombre.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        tvNombre.setPadding(dpToPx(8), 0, dpToPx(8), 0);
+        tvNombre.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(35)));
         filaFija.addView(tvNombre);
 
         tablaFija.addView(filaFija);
 
-        // --- FILA DE NOTAS ---
+        // FILA DE NOTAS + PROMEDIOS
         TableRow filaNotas = new TableRow(this);
         filaNotas.setBackgroundColor(colorFondo);
 
-        for (ColumnaConfig columna : columnasDatos) {
-            View celda = crearCelda(estudiante, columna);
-            celda.setLayoutParams(new TableRow.LayoutParams(
-                    dpToPx(columna.ancho), dpToPx(40)));
-            filaNotas.addView(celda);
+        for (GrupoColumnas grupo : grupos) {
+            // Columnas hijas
+            for (ColumnaHija columna : grupo.columnasHijas) {
+                String valor = estudiante.getNota(columna.claveFirebase);
+                // Determinar si es editable o no (solo las de TOTALES no editables)
+                boolean editable = !(columna.claveFirebase.equals("notaTrimestral100") ||
+                        columna.claveFirebase.equals("ponderaciones") ||
+                        columna.claveFirebase.equals("autoevaluacion") ||
+                        columna.claveFirebase.equals("notaParcial"));
+
+                if (editable) {
+                    EditText editText = new EditText(this);
+                    editText.setText(valor);
+                    editText.setPadding(dpToPx(2), dpToPx(2), dpToPx(2), dpToPx(2));
+                    editText.setTextSize(11);
+                    editText.setGravity(Gravity.CENTER);
+                    editText.setBackgroundResource(android.R.drawable.edit_text);
+                    editText.setInputType(android.text.InputType.TYPE_CLASS_NUMBER |
+                            android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+                    editText.setSingleLine(true);
+
+                    editText.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            String nuevoValor = s.toString().trim();
+                            if (nuevoValor.isEmpty()) nuevoValor = "--";
+
+                            // Guardar cambio de la hija
+                            String key = estudiante.getKeyFirebase() + "_" + columna.claveFirebase;
+                            Map<String, Object> cambio = new HashMap<>();
+                            cambio.put("valor", nuevoValor);
+                            cambio.put("estudianteKey", estudiante.getKeyFirebase());
+                            cambio.put("claveFirebase", columna.claveFirebase);
+                            cambiosPendientes.put(key, cambio);
+
+                            estudiante.setNota(columna.claveFirebase, nuevoValor);
+
+                            // Recalcular y guardar promedio del grupo (si existe)
+                            if (grupo.clavePromedio != null) {
+                                double promedio = calcularPromedioGrupo(estudiante, grupo);
+                                String valorProm = String.format("%.1f", promedio);
+                                String keyProm = estudiante.getKeyFirebase() + "_" + grupo.clavePromedio;
+                                Map<String, Object> cambioProm = new HashMap<>();
+                                cambioProm.put("valor", valorProm);
+                                cambioProm.put("estudianteKey", estudiante.getKeyFirebase());
+                                cambioProm.put("claveFirebase", grupo.clavePromedio);
+                                cambiosPendientes.put(keyProm, cambioProm);
+                                estudiante.setNota(grupo.clavePromedio, valorProm);
+
+                                // Actualizar la celda de promedio visualmente (opcional, pero se refresca al recargar)
+                                // Para simplificar, recargamos toda la tabla al perder foco o al guardar.
+                                // Aquí podrías forzar un refresh, pero es costoso. Mejor al guardar.
+                            }
+                        }
+                    });
+
+                    editText.setLayoutParams(new TableRow.LayoutParams(dpToPx(columna.ancho), dpToPx(35)));
+                    filaNotas.addView(editText);
+                } else {
+                    // No editable (TextView)
+                    TextView tv = new TextView(this);
+                    tv.setText(valor);
+                    tv.setTextSize(11);
+                    tv.setGravity(Gravity.CENTER);
+                    tv.setLayoutParams(new TableRow.LayoutParams(dpToPx(columna.ancho), dpToPx(35)));
+                    filaNotas.addView(tv);
+                }
+            }
+
+            // Columna de PROMEDIO (si existe)
+            if (grupo.clavePromedio != null) {
+                String valorProm = estudiante.getNota(grupo.clavePromedio);
+                // Si no existe, calcular y asignar
+                if (valorProm.equals("--")) {
+                    double promedio = calcularPromedioGrupo(estudiante, grupo);
+                    valorProm = String.format("%.1f", promedio);
+                    estudiante.setNota(grupo.clavePromedio, valorProm);
+                }
+                TextView tvProm = new TextView(this);
+                tvProm.setText(valorProm);
+                tvProm.setTextSize(12);
+                tvProm.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark));
+                tvProm.setTypeface(null, android.graphics.Typeface.BOLD);
+                tvProm.setGravity(Gravity.CENTER);
+                tvProm.setLayoutParams(new TableRow.LayoutParams(dpToPx(grupo.anchoPromedio), dpToPx(35)));
+                filaNotas.addView(tvProm);
+            }
         }
 
         tablaNotas.addView(filaNotas);
     }
 
     // ============================================================
-    // 13. CREACIÓN DE CELDAS
+    // CÁLCULO DE PROMEDIO DE UN GRUPO
     // ============================================================
-    private View crearCelda(Estudiante estudiante, ColumnaConfig columna) {
-        switch (columna.tipo) {
-            case NOTA:
-                return crearCeldaNota(estudiante, columna);
-            case PROMEDIO:
-                return crearCeldaPromedio(estudiante, columna);
-            case PROMEDIO_PONDERADO:
-                return crearCeldaPromedioPonderado(estudiante, columna);
-            case TOTAL:
-                return crearCeldaTotal(estudiante, columna);
-            case NOTA_FINAL:
-                return crearCeldaNotaFinal(estudiante, columna);
-            default:
-                return crearTextViewSimple("--");
-        }
-    }
-
-    // ============================================================
-    // 14. CELDA DE NOTA (EDITABLE)
-    // ============================================================
-    private View crearCeldaNota(Estudiante estudiante, ColumnaConfig columna) {
-        String texto = estudiante.getNota(columna.claveFirebase);
-        EditText editText = new EditText(this);
-        editText.setText(texto);
-        editText.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
-        editText.setTextSize(11);
-        editText.setGravity(Gravity.CENTER);
-        editText.setBackgroundResource(android.R.drawable.edit_text);
-        editText.setInputType(android.text.InputType.TYPE_CLASS_NUMBER |
-                android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        editText.setSingleLine(true);
-
-        editText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                String nuevoValor = s.toString().trim();
-                if (nuevoValor.isEmpty()) nuevoValor = "--";
-
-                String key = estudiante.getKeyFirebase() + "_" + columna.claveFirebase;
-                Map<String, Object> cambio = new HashMap<>();
-                cambio.put("valor", nuevoValor);
-                cambio.put("estudianteKey", estudiante.getKeyFirebase());
-                cambio.put("claveFirebase", columna.claveFirebase);
-                cambiosPendientes.put(key, cambio);
-
-                estudiante.setNota(columna.claveFirebase, nuevoValor);
-                actualizarCeldasCalculadas(estudiante);
-
-                tvTituloCurso.setText("Primero C * " + listaEstudiantes.size() + " alumnos");
-            }
-        });
-
-        return editText;
-    }
-
-    // ============================================================
-    // 15. CELDA DE PROMEDIO SIMPLE
-    // ============================================================
-    private View crearCeldaPromedio(Estudiante estudiante, ColumnaConfig columna) {
-        List<String> clavesDependientes = new ArrayList<>();
-        if (columna.indicesDependientes != null) {
-            for (int idx : columna.indicesDependientes) {
-                if (idx < columnasConfig.size()) {
-                    String clave = columnasConfig.get(idx).claveFirebase;
-                    if (clave != null) {
-                        clavesDependientes.add(clave);
-                    }
-                }
+    private double calcularPromedioGrupo(Estudiante estudiante, GrupoColumnas grupo) {
+        double suma = 0;
+        int count = 0;
+        for (ColumnaHija columna : grupo.columnasHijas) {
+            double valor = estudiante.getNotaValor(columna.claveFirebase);
+            if (valor >= 0) {
+                suma += valor;
+                count++;
             }
         }
-
-        double promedio = estudiante.calcularPromedioSimple(clavesDependientes);
-        TextView textView = crearTextViewCalculado(String.format("%.1f", promedio));
-        textView.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark));
-        return textView;
+        return count > 0 ? suma / count : 0;
     }
 
     // ============================================================
-    // 16. CELDA DE PROMEDIO PONDERADO
-    // ============================================================
-    private View crearCeldaPromedioPonderado(Estudiante estudiante, ColumnaConfig columna) {
-        Map<String, Double> pesos = new HashMap<>();
-
-        if (columna.claveFirebase.equals("promedioDimension45")) {
-            pesos.put("nroSellosApuntes", 0.1);
-            pesos.put("puntajeApuntes", 0.15);
-            pesos.put("mapaConceptoTriangulos", 0.15);
-            pesos.put("evPlanoCartesiano", 0.15);
-            pesos.put("lecturaMatematica", 0.2);
-            pesos.put("evaluacionTrimestral", 0.25);
-        } else if (columna.claveFirebase.equals("promedioDimension40")) {
-            pesos.put("nroSellosPracticas", 0.1);
-            pesos.put("puntajePracticas", 0.15);
-            pesos.put("practicasLibroSudoku", 0.2);
-            pesos.put("evAngulosRectosLlanos", 0.25);
-            pesos.put("divNumerosEnteros", 0.3);
-        }
-
-        double promedio = estudiante.calcularPromedioPonderado(pesos);
-        TextView textView = crearTextViewCalculado(String.format("%.1f", promedio));
-        textView.setTextColor(ContextCompat.getColor(this, android.R.color.holo_purple));
-        return textView;
-    }
-
-    // ============================================================
-    // 17. CELDA DE TOTAL
-    // ============================================================
-    private View crearCeldaTotal(Estudiante estudiante, ColumnaConfig columna) {
-        List<String> clavesNotas = new ArrayList<>();
-        for (ColumnaConfig col : columnasConfig) {
-            if (col.tipo == TipoColumna.NOTA && col.claveFirebase != null) {
-                clavesNotas.add(col.claveFirebase);
-            }
-        }
-
-        double total = estudiante.calcularTotal(clavesNotas);
-        TextView textView = crearTextViewCalculado(String.format("%.1f", total));
-        textView.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
-        textView.setTypeface(null, android.graphics.Typeface.BOLD);
-        return textView;
-    }
-
-    // ============================================================
-    // 18. CELDA DE NOTA FINAL
-    // ============================================================
-    private View crearCeldaNotaFinal(Estudiante estudiante, ColumnaConfig columna) {
-        double notaFinal = estudiante.calcularNotaFinal();
-        TextView textView = crearTextViewCalculado(String.format("%.1f", notaFinal));
-        textView.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
-        textView.setTypeface(null, android.graphics.Typeface.BOLD);
-        return textView;
-    }
-
-    // ============================================================
-    // 19. ACTUALIZAR CELDAS CALCULADAS
-    // ============================================================
-    private void actualizarCeldasCalculadas(Estudiante estudiante) {
-        crearTablas();
-    }
-
-    // ============================================================
-    // 20. UTILIDADES
-    // ============================================================
-    private TextView crearTextViewSimple(String texto) {
-        TextView textView = new TextView(this);
-        textView.setText(texto);
-        textView.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
-        textView.setTextSize(11);
-        textView.setGravity(Gravity.CENTER);
-        textView.setSingleLine(true);
-        return textView;
-    }
-
-    private TextView crearTextViewCalculado(String texto) {
-        TextView textView = new TextView(this);
-        textView.setText(texto);
-        textView.setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6));
-        textView.setTextSize(12);
-        textView.setGravity(Gravity.CENTER);
-        textView.setSingleLine(true);
-        textView.setBackgroundResource(android.R.drawable.edit_text);
-        textView.setEnabled(false);
-        return textView;
-    }
-
-    // ============================================================
-    // 21. FILA DE TOTALES
+    // FILA DE TOTALES (PROMEDIOS POR COLUMNA)
     // ============================================================
     private void crearFilaTotales() {
-        List<ColumnaConfig> columnasDatos = new ArrayList<>();
-        for (int i = 2; i < columnasConfig.size(); i++) {
-            columnasDatos.add(columnasConfig.get(i));
-        }
-
         int colorFondo = ContextCompat.getColor(this, R.color.color_secundario);
 
-        // --- FILA TOTALES FIJA ---
+        // FILA TOTALES FIJA
         TableRow filaTotalesFija = new TableRow(this);
         filaTotalesFija.setBackgroundColor(colorFondo);
 
-        TextView tvTotales = crearTextViewSimple("PROMEDIOS");
+        TextView tvTotales = new TextView(this);
+        tvTotales.setText("PROMEDIOS");
+        tvTotales.setTextSize(12);
         tvTotales.setTextColor(ContextCompat.getColor(this, android.R.color.white));
         tvTotales.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvTotales.setLayoutParams(new TableRow.LayoutParams(
-                dpToPx(columnasConfig.get(0).ancho), dpToPx(40)));
+        tvTotales.setGravity(Gravity.CENTER);
+        tvTotales.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(35)));
         filaTotalesFija.addView(tvTotales);
 
-        TextView tvVacia = crearTextViewSimple("");
-        tvVacia.setLayoutParams(new TableRow.LayoutParams(
-                dpToPx(columnasConfig.get(1).ancho), dpToPx(40)));
+        TextView tvVacia = new TextView(this);
+        tvVacia.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(35)));
         filaTotalesFija.addView(tvVacia);
 
         tablaFija.addView(filaTotalesFija);
 
-        // --- FILA TOTALES DE NOTAS ---
+        // FILA TOTALES DE NOTAS
         TableRow filaTotalesNotas = new TableRow(this);
         filaTotalesNotas.setBackgroundColor(colorFondo);
 
-        for (ColumnaConfig columna : columnasDatos) {
-            if (columna.tipo == TipoColumna.NOTA) {
+        for (GrupoColumnas grupo : grupos) {
+            // Promedios de columnas hijas
+            for (ColumnaHija columna : grupo.columnasHijas) {
                 double suma = 0;
                 int count = 0;
                 for (Estudiante estudiante : listaEstudiantes) {
@@ -995,17 +617,35 @@ public class PrimeroActivity extends AppCompatActivity {
                     }
                 }
                 double promedio = count > 0 ? suma / count : 0;
-                TextView tvProm = crearTextViewSimple(String.format("%.1f", promedio));
+                TextView tvProm = new TextView(this);
+                tvProm.setText(String.format("%.1f", promedio));
+                tvProm.setTextSize(11);
                 tvProm.setTextColor(ContextCompat.getColor(this, android.R.color.white));
                 tvProm.setTypeface(null, android.graphics.Typeface.BOLD);
-                tvProm.setLayoutParams(new TableRow.LayoutParams(
-                        dpToPx(columna.ancho), dpToPx(40)));
+                tvProm.setGravity(Gravity.CENTER);
+                tvProm.setLayoutParams(new TableRow.LayoutParams(dpToPx(columna.ancho), dpToPx(35)));
                 filaTotalesNotas.addView(tvProm);
-            } else {
-                TextView tvVaciaCalc = crearTextViewSimple("");
-                tvVaciaCalc.setLayoutParams(new TableRow.LayoutParams(
-                        dpToPx(columna.ancho), dpToPx(40)));
-                filaTotalesNotas.addView(tvVaciaCalc);
+            }
+            // Promedio del grupo (si existe)
+            if (grupo.clavePromedio != null) {
+                double suma = 0;
+                int count = 0;
+                for (Estudiante estudiante : listaEstudiantes) {
+                    double valor = estudiante.getNotaValor(grupo.clavePromedio);
+                    if (valor >= 0) {
+                        suma += valor;
+                        count++;
+                    }
+                }
+                double promedio = count > 0 ? suma / count : 0;
+                TextView tvProm = new TextView(this);
+                tvProm.setText(String.format("%.1f", promedio));
+                tvProm.setTextSize(12);
+                tvProm.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+                tvProm.setTypeface(null, android.graphics.Typeface.BOLD);
+                tvProm.setGravity(Gravity.CENTER);
+                tvProm.setLayoutParams(new TableRow.LayoutParams(dpToPx(grupo.anchoPromedio), dpToPx(35)));
+                filaTotalesNotas.addView(tvProm);
             }
         }
 
@@ -1013,7 +653,7 @@ public class PrimeroActivity extends AppCompatActivity {
     }
 
     // ============================================================
-    // 22. GUARDAR EN FIREBASE
+    // GUARDAR EN FIREBASE
     // ============================================================
     private void guardarTodosLosCambios() {
         if (cambiosPendientes.isEmpty()) {
@@ -1021,7 +661,7 @@ public class PrimeroActivity extends AppCompatActivity {
             return;
         }
 
-        Toast.makeText(this, "Guardando cambios (" + cambiosPendientes.size() + ")...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Guardando cambios (" + cambiosPendientes.size() + ")", Toast.LENGTH_SHORT).show();
 
         for (Map.Entry<String, Map<String, Object>> entry : cambiosPendientes.entrySet()) {
             Map<String, Object> cambio = entry.getValue();
@@ -1049,7 +689,6 @@ public class PrimeroActivity extends AppCompatActivity {
         }
 
         cambiosPendientes.clear();
-        tvTituloCurso.setText("Primero C - " + listaEstudiantes.size() + " alumnos");
         Toast.makeText(this, "Cambios guardados exitosamente", Toast.LENGTH_SHORT).show();
     }
 

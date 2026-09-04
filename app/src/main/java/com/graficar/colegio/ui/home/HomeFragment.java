@@ -1,17 +1,25 @@
 package com.graficar.colegio.ui.home;
 
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.graficar.colegio.R;
 import com.graficar.colegio.databinding.FragmentHomeBinding;
 
@@ -27,91 +35,269 @@ public class HomeFragment extends Fragment {
     private View statusIndicator;
     private TextView textViewEntryTime;
     private TextView textViewExitTime;
+    private TextView textViewStudentName;
+    private Button btnBuscar;
 
-    // Patrón para verificar
-    private static final String TARGET_NAME = "miguelito";
+    // Firebase
+    private DatabaseReference databaseReference;
 
-    // Formato para mostrar la hora
-    private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+    // Fecha actual
+    private String currentDate;
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
+    @Nullable
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-
-        // El HomeViewModel se mantiene para la estructura, pero lo ignoraremos por ahora
-        HomeViewModel homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
 
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        // 1. Inicializar las vistas del nuevo layout
+        // Inicializar vistas
         editTextNameSearch = root.findViewById(R.id.editTextNameSearch);
         textViewStatus = root.findViewById(R.id.textViewStatus);
         statusIndicator = root.findViewById(R.id.statusIndicator);
         textViewEntryTime = root.findViewById(R.id.textViewEntryTime);
         textViewExitTime = root.findViewById(R.id.textViewExitTime);
+        textViewStudentName = root.findViewById(R.id.textViewStudentName);
+        btnBuscar = root.findViewById(R.id.btnBuscar);
 
-        // 2. Listener para detectar cambios en el campo de texto
-        editTextNameSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // No se necesita
-            }
+        // ============================================================
+        // 🔥 IMPORTANTE: Usar la fecha que tienes en Firebase
+        // ============================================================
+        // currentDate = dateFormat.format(new Date()); // ← COMENTADO
+        currentDate = "2026-08-20"; // ← FECHA DE TU FIREBASE
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // No se necesita
-            }
+        // Si quieres usar la fecha actual, descomenta la línea de arriba
+        // y comenta la de abajo
 
-            @Override
-            public void afterTextChanged(Editable s) {
-                checkStudentStatus(s.toString().trim());
+        // Actualizar fecha en UI
+        TextView tvDate = root.findViewById(R.id.textViewDate);
+        if (tvDate != null) {
+            tvDate.setText("📅 " + currentDate);
+        }
+
+        // Inicializar Firebase
+        databaseReference = FirebaseDatabase.getInstance().getReference("asistencias");
+
+        // Botón de búsqueda
+        btnBuscar.setOnClickListener(v -> {
+            String query = editTextNameSearch.getText().toString().trim();
+            if (!query.isEmpty()) {
+                buscarEstudiante(query);
+            } else {
+                Toast.makeText(getContext(), "Ingresa el nombre de tu hijo", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // 3. Establecer estado inicial
-        resetStatus();
+        // Buscar al presionar Enter
+        editTextNameSearch.setOnEditorActionListener((v, actionId, event) -> {
+            String query = editTextNameSearch.getText().toString().trim();
+            if (!query.isEmpty()) {
+                buscarEstudiante(query);
+                return true;
+            }
+            return false;
+        });
 
+        resetStatus();
         return root;
     }
 
     /**
-     * Verifica el nombre del estudiante y actualiza la UI.
+     * Convierte un nombre ingresado por el usuario al formato de Firebase.
      */
-    private void checkStudentStatus(String name) {
-        if (name.toLowerCase(Locale.getDefault()).equals(TARGET_NAME)) {
-            // Caso de éxito: "miguelito" está en el colegio
-            String currentTime = timeFormat.format(new Date());
+    private String convertirClaveFirebase(String nombre) {
+        String limpio = nombre.trim();
+        limpio = limpio.replace("_", " ");
+        limpio = limpio.replaceAll("\\s+", " ");
+        limpio = limpio.toUpperCase();
+        limpio = limpio.replace(" ", "_");
+        return limpio;
+    }
 
-            // 1. Actualizar indicador y texto
-            statusIndicator.setBackgroundResource(R.drawable.status_indicator_green);
-            textViewStatus.setText("Está en el colegio");
+    /**
+     * Busca un estudiante por nombre completo.
+     */
+    private void buscarEstudiante(String nombreCompleto) {
+        String claveBusqueda = convertirClaveFirebase(nombreCompleto);
 
-            // 2. Actualizar horas de entrada (Salida queda pendiente para lógica avanzada)
-            textViewEntryTime.setText(currentTime);
-            textViewExitTime.setText("Pendiente");
+        // 🔍 LOGS PARA DEPURAR
+        Log.d("ASISTENCIA", "========================================");
+        Log.d("ASISTENCIA", "📝 Nombre ingresado: " + nombreCompleto);
+        Log.d("ASISTENCIA", "🔑 Clave convertida: " + claveBusqueda);
+        Log.d("ASISTENCIA", "📅 Fecha actual: " + currentDate);
+        Log.d("ASISTENCIA", "📂 Ruta Firebase: asistencias/" + currentDate);
+        Log.d("ASISTENCIA", "========================================");
 
-        } else if (name.isEmpty()) {
-            // Campo vacío
-            resetStatus();
+        DatabaseReference dayRef = databaseReference.child(currentDate);
+
+        // Mostrar mensaje de búsqueda
+        textViewStatus.setText("🔍 Buscando...");
+        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark));
+
+        dayRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Log.d("ASISTENCIA", "📊 Snapshot existe: " + snapshot.exists());
+                Log.d("ASISTENCIA", "📊 Total estudiantes: " + snapshot.getChildrenCount());
+
+                if (snapshot.exists()) {
+                    // Mostrar todos los nombres disponibles
+                    Log.d("ASISTENCIA", "📋 Nombres en Firebase:");
+                    for (DataSnapshot child : snapshot.getChildren()) {
+                        Log.d("ASISTENCIA", "   - " + child.getKey() + " = " + child.getValue());
+                    }
+
+                    boolean encontrado = false;
+                    String nombreEncontrado = null;
+                    Boolean presente = null;
+
+                    for (DataSnapshot child : snapshot.getChildren()) {
+                        String key = child.getKey();
+                        if (key != null) {
+                            Log.d("ASISTENCIA", "🔍 Comparando: '" + key + "' vs '" + claveBusqueda + "'");
+                            if (key.equalsIgnoreCase(claveBusqueda)) {
+                                encontrado = true;
+                                nombreEncontrado = key;
+                                if (child.getValue() instanceof Boolean) {
+                                    presente = child.getValue(Boolean.class);
+                                }
+                                Log.d("ASISTENCIA", "✅ ¡ENCONTRADO! " + key + " = " + presente);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (encontrado) {
+                        String nombreFormateado = nombreEncontrado.replace("_", " ");
+                        actualizarUI(true, presente, nombreFormateado);
+                    } else {
+                        Log.d("ASISTENCIA", "❌ No encontrado exacto, buscando sugerencias...");
+                        buscarSugerencia(claveBusqueda, snapshot);
+                    }
+                } else {
+                    Log.d("ASISTENCIA", "❌ No hay datos para la fecha: " + currentDate);
+                    actualizarUI(false, null, null);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("ASISTENCIA", "🔥 Error: " + error.getMessage());
+                Toast.makeText(getContext(), "Error al consultar asistencia", Toast.LENGTH_SHORT).show();
+                resetStatus();
+            }
+        });
+    }
+
+    /**
+     * Busca sugerencias similares cuando no encuentra exacto.
+     */
+    private void buscarSugerencia(String claveBusqueda, DataSnapshot snapshot) {
+        String nombreEncontrado = null;
+        Boolean presente = null;
+        int minDiferencia = Integer.MAX_VALUE;
+
+        for (DataSnapshot child : snapshot.getChildren()) {
+            String key = child.getKey();
+            if (key != null) {
+                String keyUpper = key.toUpperCase();
+                int distancia = calcularDistancia(keyUpper, claveBusqueda);
+                Log.d("ASISTENCIA", "   Distancia '" + key + "' = " + distancia);
+                if (distancia < minDiferencia && distancia < 5) {
+                    minDiferencia = distancia;
+                    nombreEncontrado = key;
+                    if (child.getValue() instanceof Boolean) {
+                        presente = child.getValue(Boolean.class);
+                    }
+                }
+            }
+        }
+
+        if (nombreEncontrado != null) {
+            Log.d("ASISTENCIA", "💡 Sugerencia: " + nombreEncontrado);
+            String nombreFormateado = nombreEncontrado.replace("_", " ");
+            actualizarUI(true, presente, nombreFormateado + " (Presente)");
         } else {
-            // Nombre diferente
-            statusIndicator.setBackgroundResource(R.drawable.status_indicator_gray);
-            textViewStatus.setText("Estudiante NO registrado hoy");
-            textViewEntryTime.setText("--");
-            textViewExitTime.setText("--");
+            Log.d("ASISTENCIA", "❌ No hay sugerencias");
+            actualizarUI(false, null, null);
         }
     }
 
     /**
-     * Restaura el estado a la configuración inicial.
+     * Calcula distancia de Levenshtein.
      */
-    private void resetStatus() {
-        statusIndicator.setBackgroundResource(R.drawable.status_indicator_gray);
-        textViewStatus.setText("Ingrese un nombre para verificar estado");
-        textViewEntryTime.setText("--");
-        textViewExitTime.setText("--");
+    private int calcularDistancia(String s1, String s2) {
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+        for (int i = 0; i <= s1.length(); i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= s2.length(); j++) {
+            dp[0][j] = j;
+        }
+        for (int i = 1; i <= s1.length(); i++) {
+            for (int j = 1; j <= s2.length(); j++) {
+                int cost = s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1;
+                dp[i][j] = Math.min(Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
+            }
+        }
+        return dp[s1.length()][s2.length()];
     }
 
+    /**
+     * Actualiza la UI con el resultado.
+     */
+    private void actualizarUI(boolean encontrado, Boolean presente, String nombre) {
+        if (encontrado) {
+            textViewStudentName.setText("👤 " + nombre);
+            textViewStudentName.setVisibility(View.VISIBLE);
+
+            if (presente != null && presente) {
+                // ✅ PRESENTE - Verde
+                statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+                textViewStatus.setText("✅ PRESENTE");
+                textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+                textViewEntryTime.setText("Hora de ingreso no encontrada en la base de datos.");
+                textViewExitTime.setText("Hola de salida no encontrada en la base de datos.");
+
+            } else if (presente != null && !presente) {
+                // ❌ AUSENTE - Rojo
+                statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
+                textViewStatus.setText("❌ AUSENTE");
+                textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
+                textViewEntryTime.setText("--:--:--");
+                textViewExitTime.setText("--:--:--");
+            } else {
+                // ⚠️ Sin registro
+                statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark));
+                textViewStatus.setText("⚠️ Sin registro");
+                textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark));
+                textViewEntryTime.setText("--:--:--");
+                textViewExitTime.setText("--:--:--");
+            }
+        } else {
+            // ❌ No encontrado
+            statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+            textViewStatus.setText("❌ Estudiante no encontrado");
+            textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+            textViewStudentName.setVisibility(View.GONE);
+            textViewEntryTime.setText("--:--:--");
+            textViewExitTime.setText("--:--:--");
+        }
+    }
+
+    /**
+     * Estado inicial.
+     */
+    private void resetStatus() {
+        statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+        textViewStatus.setText("🔍 Busca a tu hijo");
+        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+        textViewStudentName.setVisibility(View.GONE);
+        textViewEntryTime.setText("--:--:--");
+        textViewExitTime.setText("--:--:--");
+    }
 
     @Override
     public void onDestroyView() {

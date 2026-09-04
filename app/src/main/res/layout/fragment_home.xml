@@ -5,108 +5,217 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp"
-    android:background="#FAFAFA"
+    android:background="#F8F9FA"
+    android:padding="16dp"
     tools:context=".ui.home.HomeFragment">
 
-    <!-- Campo de Búsqueda de Nombre -->
-    <EditText
-        android:id="@+id/editTextNameSearch"
+    <!-- Encabezado -->
+    <TextView
+        android:id="@+id/textViewHeader"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Buscar nombre del estudiante"
-        android:inputType="textPersonName"
-        android:padding="16dp"
-        android:textSize="18sp"
-        android:drawableStart="@drawable/outline_ar_stickers_24"
-        android:drawablePadding="12dp"
+        android:text="👨‍👩‍👦 Control de Asistencia"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#212529"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="32dp"/>
-
-
-    <View
-        android:id="@+id/statusIndicator"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
-        android:layout_marginTop="40dp"
-        android:background="@drawable/status_indicator_gray"
-        app:layout_constraintTop_toBottomOf="@id/editTextNameSearch"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/textViewStatus"/>
+        android:layout_marginTop="16dp" />
 
     <TextView
-        android:id="@+id/textViewStatus"
+        android:id="@+id/textViewDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📅 Cargando fecha..."
+        android:textSize="16sp"
+        android:textColor="#6C757D"
+        app:layout_constraintTop_toBottomOf="@id/textViewHeader"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="4dp" />
+
+    <!-- Línea divisoria -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:background="#E0E0E0"
+        app:layout_constraintTop_toBottomOf="@id/textViewDate"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Campo de búsqueda -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:text="Ingrese un nombre para verificar estado"
-        android:textSize="20sp"
-        android:textColor="#212121"
-        android:textStyle="bold"
-        app:layout_constraintStart_toEndOf="@id/statusIndicator"
-        app:layout_constraintTop_toTopOf="@id/statusIndicator"
-        app:layout_constraintBottom_toBottomOf="@id/statusIndicator"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-
-    <View
-        android:id="@+id/separator"
-        android:layout_width="0dp"
-        android:layout_height="2dp"
-        android:layout_marginTop="36dp"
-        android:background="#BDBDBD"
-        app:layout_constraintTop_toBottomOf="@id/statusIndicator"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-
-    <TextView
-        android:id="@+id/textViewEntryTimeLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hora de Entrada:"
-        android:textStyle="bold"
-        android:textSize="18sp"
-        android:textColor="#424242"
-        android:layout_marginTop="32dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/separator"/>
-
-    <TextView
-        android:id="@+id/textViewEntryTime"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="--"
-        android:textSize="18sp"
-        android:textColor="#212121"
-        android:layout_marginStart="12dp"
-        app:layout_constraintStart_toEndOf="@id/textViewEntryTimeLabel"
-        app:layout_constraintTop_toTopOf="@id/textViewEntryTimeLabel"/>
-
-
-    <TextView
-        android:id="@+id/textViewExitTimeLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hora de Salida:"
-        android:textStyle="bold"
-        android:textSize="18sp"
-        android:textColor="#424242"
         android:layout_marginTop="20dp"
+        app:layout_constraintTop_toBottomOf="@id/divider"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textViewEntryTimeLabel"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editTextNameSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ej: ADUVIRI CHURA ARLIN LUCILA"
+            android:inputType="textPersonName"
+            android:drawableStart="@drawable/outline_search_24"
+            android:drawablePadding="12dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textSize="16sp" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Botón de búsqueda (DEBAJO) -->
+    <Button
+        android:id="@+id/btnBuscar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="12dp"
+        android:text="🔍 Buscar estudiante"
+        android:backgroundTint="#2196F3"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/textInputLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Tarjeta de resultado -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardResult"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        app:layout_constraintTop_toBottomOf="@id/btnBuscar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#FFFFFF">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Nombre del estudiante -->
+            <TextView
+                android:id="@+id/textViewStudentName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="👤 Nombre del estudiante"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#212529"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Estado e indicador -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="20dp">
+
+                <View
+                    android:id="@+id/statusIndicator"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:background="@drawable/status_indicator_gray"
+                    android:layout_marginEnd="12dp" />
+
+                <TextView
+                    android:id="@+id/textViewStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🔍 Busca a tu hijo"
+                    android:textSize="18sp"
+                    android:textColor="#212529"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Línea divisoria -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginVertical="8dp" />
+
+            <!-- Hora de entrada -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⏰ Entrada:"
+                    android:textSize="16sp"
+                    android:textColor="#6C757D"
+                    android:layout_marginEnd="12dp"
+                    android:minWidth="80dp" />
+
+                <TextView
+                    android:id="@+id/textViewEntryTime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="--:--:--"
+                    android:textSize="16sp"
+                    android:textColor="#212529"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Hora de salida -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⏰ Salida:"
+                    android:textSize="16sp"
+                    android:textColor="#6C757D"
+                    android:layout_marginEnd="12dp"
+                    android:minWidth="80dp" />
+
+                <TextView
+                    android:id="@+id/textViewExitTime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="--:--:--"
+                    android:textSize="16sp"
+                    android:textColor="#212529"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Mensaje informativo -->
     <TextView
-        android:id="@+id/textViewExitTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="--"
-        android:textSize="18sp"
-        android:textColor="#212121"
-        android:layout_marginStart="12dp"
-        app:layout_constraintStart_toEndOf="@id/textViewExitTimeLabel"
-        app:layout_constraintTop_toTopOf="@id/textViewExitTimeLabel"/>
+        android:text="ℹ️ Escribe el nombre completo y presiona Buscar"
+        android:textSize="12sp"
+        android:textColor="#9E9E9E"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="16dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
