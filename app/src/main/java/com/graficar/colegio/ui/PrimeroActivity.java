@@ -6,9 +6,9 @@ import android.text.Editable;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
-import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -26,14 +26,18 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.graficar.colegio.R;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class PrimeroActivity extends AppCompatActivity {
+
     // ============================================================
-    // COMPONENTES UI
+    // UI COMPONENTS
     // ============================================================
     private TableLayout tablaNotas;
     private TableLayout tablaFija;
@@ -41,111 +45,79 @@ public class PrimeroActivity extends AppCompatActivity {
     private HorizontalScrollView scrollHorizontal;
     private ScrollView scrollFijaVertical;
     private TextView tvTituloCurso;
+    private Button btnGuardar;
 
     // ============================================================
-    // DATOS PRINCIPALES
+    // DATA
     // ============================================================
     private List<Estudiante> listaEstudiantes;
-    private DatabaseReference databaseReference;
+    private DatabaseReference dbRef;
     private Map<String, Map<String, Object>> cambiosPendientes = new HashMap<>();
+    private Map<String, String> mapaObservaciones = new HashMap<>();
+    private boolean hayCambios = false;
 
     // ============================================================
-    // CONFIGURACIÓN DE ANCHOS (¡AQUÍ SE AJUSTAN TAMAÑOS!)
+    // CONFIGURACIÓN
     // ============================================================
-    private static final int ANCHO_NUMERO = 25;          // Ancho de columna N°
-    private static final int ANCHO_NOMBRE = 170;         // Ancho de columna APELLIDOS Y NOMBRES
-    private static final int ANCHO_PROMEDIO = 90;        // Ancho de columna de promedio (se puede ajustar por grupo)
+    private static final int ANCHO_NUMERO = 30;
+    private static final int ANCHO_NOMBRE = 180;
+    private static final int ANCHO_NOTA = 65;
+    private static final int ANCHO_OBSERVACIONES = 200;
+
+    private static final int ALTURA_FILA = 40;
+    private static final int ALTURA_ENCABEZADO = 35;
+
+    private String gradoActual = "primeroC";
+    private String trimestreActual = "trimestre1";  // ← Solo trabajamos con Trimestre 1
+    private String materiaActual = "matematica";
 
     // ============================================================
-    // ESTRUCTURA DE COLUMNAS
+    // COLUMNAS
     // ============================================================
-    private static class GrupoColumnas {
-        String nombre;
-        List<ColumnaHija> columnasHijas;
-        String clavePromedio;      // Clave en Firebase para guardar el promedio
-        int anchoPromedio;         // Ancho de la columna de promedio (si es 0 usa ANCHO_PROMEDIO)
-
-        public GrupoColumnas(String nombre, List<ColumnaHija> columnasHijas, String clavePromedio, int anchoPromedio) {
-            this.nombre = nombre;
-            this.columnasHijas = columnasHijas;
-            this.clavePromedio = clavePromedio;
-            this.anchoPromedio = anchoPromedio > 0 ? anchoPromedio : ANCHO_PROMEDIO;
-        }
-    }
-
-    private static class ColumnaHija {
+    private static class ColumnaConfig {
         String titulo;
-        int ancho;
         String claveFirebase;
+        boolean editable;
 
-        public ColumnaHija(String titulo, int ancho, String claveFirebase) {
+        public ColumnaConfig(String titulo, String claveFirebase, boolean editable) {
             this.titulo = titulo;
-            this.ancho = ancho;
             this.claveFirebase = claveFirebase;
+            this.editable = editable;
         }
     }
 
-    private List<GrupoColumnas> grupos = new ArrayList<>();
+    private List<ColumnaConfig> columnas = new ArrayList<>();
 
-    // ============================================================
-    // CONFIGURACIÓN DE GRUPOS Y COLUMNAS (¡AQUÍ SE AGREGAN/MODIFICAN!)
-    // ============================================================
-    private void inicializarEstructura() {
-        // GRUPO SER
-        List<ColumnaHija> columnasSer = new ArrayList<>();
-        columnasSer.add(new ColumnaHija("CARÁTULAS", 80, "caratulas"));
-        columnasSer.add(new ColumnaHija("AGENDA", 80, "sellosAgenda"));
-        grupos.add(new GrupoColumnas("SER", columnasSer, "promedioSer", 90));
-
-        // GRUPO SABER
-        List<ColumnaHija> columnasSaber = new ArrayList<>();
-        columnasSaber.add(new ColumnaHija("SELLOS APUNTES", 80, "nroSellosApuntes"));
-        columnasSaber.add(new ColumnaHija("PUNTAJE APUNTES", 80, "puntajeApuntes"));
-        columnasSaber.add(new ColumnaHija("MAPA CONCEPTO", 80, "mapaConceptoTriangulos"));
-        columnasSaber.add(new ColumnaHija("PLANO CARTESIANO", 80, "evPlanoCartesiano"));
-        columnasSaber.add(new ColumnaHija("LECTURA MATEMÁTICA", 80, "lecturaMatematica"));
-        columnasSaber.add(new ColumnaHija("EV. TRIMESTRAL", 80, "evaluacionTrimestral"));
-        grupos.add(new GrupoColumnas("SABER", columnasSaber, "promedioSaber", 90));
-
-        // GRUPO HACER
-        List<ColumnaHija> columnasHacer = new ArrayList<>();
-        columnasHacer.add(new ColumnaHija("SELLOS PRÁCTICAS", 80, "nroSellosPracticas"));
-        columnasHacer.add(new ColumnaHija("PUNTAJE PRÁCTICAS", 80, "puntajePracticas"));
-        columnasHacer.add(new ColumnaHija("LIBRO SUDOKU", 80, "practicasLibroSudoku"));
-        columnasHacer.add(new ColumnaHija("PRACTICA EMP. N1", 80, "practicaEmpastado1"));
-        columnasHacer.add(new ColumnaHija("PRACTICA EMP. N2", 80, "practicaEmpastado2"));
-        columnasHacer.add(new ColumnaHija("REFORZAMIENTO", 80, "reforzamiento"));
-        grupos.add(new GrupoColumnas("HACER", columnasHacer, "promedioHacer", 90));
-
-        // GRUPO DECIDIR
-        List<ColumnaHija> columnasDecidir = new ArrayList<>();
-        columnasDecidir.add(new ColumnaHija("AULA ABIERTA", 80, "aulaAbierta"));
-        columnasDecidir.add(new ColumnaHija("CALIFICACIÓN DECIDIR", 80, "calificacionDecidir"));
-        grupos.add(new GrupoColumnas("DECIDIR", columnasDecidir, "promedioDecidir", 90));
-
-        // GRUPO TOTALES (sin promedio)
-        List<ColumnaHija> columnasTotales = new ArrayList<>();
-        columnasTotales.add(new ColumnaHija("AUTOEVALUACIÓN", 80, "autoevaluacion"));
-        columnasTotales.add(new ColumnaHija("NOTA PARCIAL", 80, "notaParcial"));
-        columnasTotales.add(new ColumnaHija("PONDERACIONES", 80, "ponderaciones"));
-        columnasTotales.add(new ColumnaHija("NOTA TRIMESTRAL", 90, "notaTrimestral100"));
-        grupos.add(new GrupoColumnas("TOTALES", columnasTotales, null, 0));
+    private void inicializarColumnas() {
+        columnas.add(new ColumnaConfig("SER", "ser", true));
+        columnas.add(new ColumnaConfig("SABER", "saber", true));
+        columnas.add(new ColumnaConfig("HACER", "hacer", true));
+        columnas.add(new ColumnaConfig("PROMEDIO", "promedio", false));
+        columnas.add(new ColumnaConfig("TOTAL", "total", false));
+        columnas.add(new ColumnaConfig("AUTOEV.", "autoevaluacion", false));
+        columnas.add(new ColumnaConfig("NOTA PARCIAL", "nota parcial", false));
+        columnas.add(new ColumnaConfig("PONDERACIÓN", "ponderacion", false));
+        columnas.add(new ColumnaConfig("NOTA TRIMESTRAL", "nota trimestral", false));
     }
 
     // ============================================================
-    // CLASE ESTUDIANTE
+    // ESTUDIANTE CLASS
     // ============================================================
     private static class Estudiante {
         private int numero;
         private String nombre;
-        private String keyFirebase;
+        private String uid;
         private Map<String, String> notas;
 
-        public Estudiante(int numero, String nombre, String keyFirebase) {
+        public Estudiante(int numero, String nombre, String uid) {
             this.numero = numero;
             this.nombre = nombre;
-            this.keyFirebase = keyFirebase;
+            this.uid = uid;
             this.notas = new HashMap<>();
+            for (String key : new String[]{"ser", "saber", "hacer", "promedio", "total",
+                    "autoevaluacion", "nota parcial", "ponderacion", "nota trimestral"}) {
+                notas.put(key, "--");
+            }
         }
 
         public void setNota(String clave, String valor) {
@@ -168,21 +140,21 @@ public class PrimeroActivity extends AppCompatActivity {
 
         public int getNumero() { return numero; }
         public String getNombre() { return nombre; }
-        public String getKeyFirebase() { return keyFirebase; }
+        public String getUid() { return uid; }
     }
 
     // ============================================================
-    // CICLO DE VIDA
+    // LIFECYCLE
     // ============================================================
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_primero);
 
-        inicializarEstructura();
+        inicializarColumnas();
         inicializarViews();
         configurarListeners();
-        inicializarFirebase();
+        cargarDatos();
     }
 
     private void inicializarViews() {
@@ -192,116 +164,174 @@ public class PrimeroActivity extends AppCompatActivity {
         scrollHorizontal = findViewById(R.id.scrollHorizontal);
         scrollFijaVertical = findViewById(R.id.scrollFijaVertical);
         tvTituloCurso = findViewById(R.id.tvTituloCurso);
+        btnGuardar = findViewById(R.id.btnGuardar);
     }
 
     private void configurarListeners() {
-        scrollVertical.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            if (scrollFijaVertical != null) {
+        if (scrollVertical != null && scrollFijaVertical != null) {
+            scrollVertical.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
                 scrollFijaVertical.scrollTo(0, scrollY);
-            }
-        });
+            });
 
-        scrollFijaVertical.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            if (scrollVertical != null) {
+            scrollFijaVertical.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
                 scrollVertical.scrollTo(0, scrollY);
-            }
-        });
-
-        findViewById(R.id.btnBack).setOnClickListener(v -> {
-            guardarTodosLosCambios();
-            finish();
-        });
-
-        tvTituloCurso.setOnLongClickListener(v -> {
-            guardarTodosLosCambios();
-            return true;
-        });
-    }
-
-    // ============================================================
-    // FIREBASE
-    // ============================================================
-    private void inicializarFirebase() {
-        try {
-            databaseReference = FirebaseDatabase.getInstance().getReference("alumnosPrimeroC");
-            Log.d("Firebase", "Referencia creada: " + databaseReference);
-        } catch (Exception e) {
-            Log.e("Firebase", "Error al inicializar Firebase: " + e.getMessage());
-            Toast.makeText(this, "Error al inicializar Firebase", Toast.LENGTH_LONG).show();
-            return;
+            });
         }
 
-        Toast.makeText(this, "Cargando datos...", Toast.LENGTH_SHORT).show();
-        cargarDatosDesdeFirebase();
+        if (btnGuardar != null) {
+            btnGuardar.setOnClickListener(v -> guardarTodosLosCambios());
+        }
+
+        if (tvTituloCurso != null) {
+            tvTituloCurso.setOnLongClickListener(v -> {
+                guardarTodosLosCambios();
+                return true;
+            });
+        }
     }
 
-    private void cargarDatosDesdeFirebase() {
-        databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
+    // ============================================================
+    // FIREBASE - CARGA DE DATOS
+    // ============================================================
+    private void cargarDatos() {
+        dbRef = FirebaseDatabase.getInstance().getReference();
+        cargarObservaciones();
+    }
+
+    // ============================================================
+    // CARGAR OBSERVACIONES DEL TRIMESTRE 1
+    // ============================================================
+    private void cargarObservaciones() {
+        dbRef.child("observaciones").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                mapaObservaciones.clear();
+
+                if (snapshot.exists()) {
+                    for (DataSnapshot uidSnapshot : snapshot.getChildren()) {
+                        String uid = uidSnapshot.getKey();
+
+                        // ✅ Buscar solo en trimestre1
+                        DataSnapshot trimestreSnapshot = uidSnapshot.child(trimestreActual);
+                        if (trimestreSnapshot.exists()) {
+                            String texto = trimestreSnapshot.child("texto").getValue(String.class);
+                            if (texto != null && !texto.isEmpty()) {
+                                mapaObservaciones.put(uid, texto);
+                                Log.d("FIREBASE", "📝 Observación T1 para " + uid + ": " + texto);
+                            }
+                        }
+                    }
+                }
+
+                cargarEstudiantes();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                cargarEstudiantes();
+            }
+        });
+    }
+
+    private void cargarEstudiantes() {
+        dbRef.child("estudiantes").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 listaEstudiantes = new ArrayList<>();
                 int contador = 1;
 
-                for (DataSnapshot alumnoSnapshot : snapshot.getChildren()) {
-                    String nombreAlumno = alumnoSnapshot.getKey();
-                    String nombreMostrar = nombreAlumno.replace("_", " ");
-                    Estudiante estudiante = new Estudiante(contador, nombreMostrar, nombreAlumno);
+                if (!snapshot.exists()) {
+                    Toast.makeText(PrimeroActivity.this, "No hay estudiantes", Toast.LENGTH_SHORT).show();
+                    mostrarMensajeVacio();
+                    return;
+                }
 
-                    DataSnapshot calificacionesSnapshot = alumnoSnapshot.child("calificaciones");
-                    if (calificacionesSnapshot.exists()) {
-                        for (GrupoColumnas grupo : grupos) {
-                            // Cargar hijas
-                            for (ColumnaHija columna : grupo.columnasHijas) {
-                                DataSnapshot notaSnapshot = calificacionesSnapshot.child(columna.claveFirebase);
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    String uid = child.getKey();
+                    String nombre = child.child("nombre").getValue(String.class);
+
+                    if (nombre != null && !nombre.isEmpty()) {
+                        Estudiante estudiante = new Estudiante(contador, nombre, uid);
+                        listaEstudiantes.add(estudiante);
+                        contador++;
+                    }
+                }
+
+                cargarCalificaciones();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("FIREBASE", "Error: " + error.getMessage());
+                Toast.makeText(PrimeroActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void cargarCalificaciones() {
+        dbRef.child("calificaciones").child(gradoActual).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    for (DataSnapshot uidSnapshot : snapshot.getChildren()) {
+                        String uid = uidSnapshot.getKey();
+                        Estudiante estudiante = buscarEstudiantePorUid(uid);
+                        if (estudiante == null) continue;
+
+                        DataSnapshot materiaSnapshot = uidSnapshot
+                                .child(trimestreActual)
+                                .child(materiaActual);
+
+                        if (materiaSnapshot.exists()) {
+                            for (ColumnaConfig columna : columnas) {
+                                DataSnapshot notaSnapshot = materiaSnapshot.child(columna.claveFirebase);
                                 if (notaSnapshot.exists()) {
                                     Object valor = notaSnapshot.getValue();
                                     estudiante.setNota(columna.claveFirebase,
                                             valor != null ? valor.toString() : "--");
                                 }
                             }
-                            // Cargar promedio si existe
-                            if (grupo.clavePromedio != null) {
-                                DataSnapshot promSnapshot = calificacionesSnapshot.child(grupo.clavePromedio);
-                                if (promSnapshot.exists()) {
-                                    Object valor = promSnapshot.getValue();
-                                    estudiante.setNota(grupo.clavePromedio,
-                                            valor != null ? valor.toString() : "--");
-                                }
-                            }
                         }
                     }
-
-                    listaEstudiantes.add(estudiante);
-                    contador++;
                 }
 
                 runOnUiThread(() -> {
-                    tvTituloCurso.setText("PRIMERO C - " + listaEstudiantes.size() + " alumnos");
+                    int conNotas = 0;
+                    for (Estudiante e : listaEstudiantes) {
+                        if (!e.getNota("ser").equals("--")) conNotas++;
+                    }
+
+                    if (tvTituloCurso != null) {
+                        tvTituloCurso.setText("PRIMERO C - MATEMÁTICA (TRIMESTRE 1) - " +
+                                listaEstudiantes.size() + " alumnos (" + conNotas + " con notas)");
+                    }
+
                     crearTablas();
-                    Toast.makeText(PrimeroActivity.this,
-                            "Se cargaron " + listaEstudiantes.size() + " estudiantes",
-                            Toast.LENGTH_SHORT).show();
                 });
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("Firebase", "Error al cargar datos: " + error.getMessage());
-                runOnUiThread(() -> {
-                    Toast.makeText(PrimeroActivity.this,
-                            "Error al cargar datos: " + error.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                });
+                runOnUiThread(() -> crearTablas());
             }
         });
+    }
+
+    private Estudiante buscarEstudiantePorUid(String uid) {
+        for (Estudiante estudiante : listaEstudiantes) {
+            if (estudiante.getUid().equals(uid)) {
+                return estudiante;
+            }
+        }
+        return null;
     }
 
     // ============================================================
     // CREACIÓN DE TABLAS
     // ============================================================
     private void crearTablas() {
-        tablaNotas.removeAllViews();
-        tablaFija.removeAllViews();
+        if (tablaNotas != null) tablaNotas.removeAllViews();
+        if (tablaFija != null) tablaFija.removeAllViews();
 
         if (listaEstudiantes == null || listaEstudiantes.isEmpty()) {
             mostrarMensajeVacio();
@@ -316,6 +346,8 @@ public class PrimeroActivity extends AppCompatActivity {
     }
 
     private void mostrarMensajeVacio() {
+        if (tablaNotas == null) return;
+
         TextView tvMensaje = new TextView(this);
         tvMensaje.setText("No hay estudiantes para mostrar");
         tvMensaje.setTextSize(16);
@@ -328,42 +360,8 @@ public class PrimeroActivity extends AppCompatActivity {
     // ENCABEZADOS
     // ============================================================
     private void crearEncabezados() {
-        // FILA 1: Nombres de grupos (con ancho total incluyendo promedio)
-        TableRow filaGrupos = new TableRow(this);
-        filaGrupos.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
-        filaGrupos.setGravity(Gravity.CENTER);
+        if (tablaFija == null || tablaNotas == null) return;
 
-        // Espacios para N° y NOMBRE (vacíos)
-        TextView tvVacio1 = new TextView(this);
-        tvVacio1.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(35)));
-        filaGrupos.addView(tvVacio1);
-
-        TextView tvVacio2 = new TextView(this);
-        tvVacio2.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(35)));
-        filaGrupos.addView(tvVacio2);
-
-        for (GrupoColumnas grupo : grupos) {
-            int anchoTotal = 0;
-            for (ColumnaHija columna : grupo.columnasHijas) {
-                anchoTotal += columna.ancho;
-            }
-            // Si tiene promedio, sumar su ancho
-            if (grupo.clavePromedio != null) {
-                anchoTotal += grupo.anchoPromedio;
-            }
-            TextView tvGrupo = new TextView(this);
-            tvGrupo.setText(grupo.nombre);
-            tvGrupo.setTextSize(14);
-            tvGrupo.setTextColor(ContextCompat.getColor(this, android.R.color.white));
-            tvGrupo.setTypeface(null, android.graphics.Typeface.BOLD);
-            tvGrupo.setGravity(Gravity.CENTER);
-            tvGrupo.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
-            tvGrupo.setLayoutParams(new TableRow.LayoutParams(dpToPx(anchoTotal), dpToPx(35)));
-            filaGrupos.addView(tvGrupo);
-        }
-        tablaNotas.addView(filaGrupos);
-
-        // FILA 1 (fija): N° y NOMBRE
         TableRow filaEncabezadoFija = new TableRow(this);
         filaEncabezadoFija.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
 
@@ -373,7 +371,7 @@ public class PrimeroActivity extends AppCompatActivity {
         tvNumero.setTextColor(ContextCompat.getColor(this, android.R.color.white));
         tvNumero.setTypeface(null, android.graphics.Typeface.BOLD);
         tvNumero.setGravity(Gravity.CENTER);
-        tvNumero.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(35)));
+        tvNumero.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(ALTURA_ENCABEZADO)));
         filaEncabezadoFija.addView(tvNumero);
 
         TextView tvApellidos = new TextView(this);
@@ -382,61 +380,47 @@ public class PrimeroActivity extends AppCompatActivity {
         tvApellidos.setTextColor(ContextCompat.getColor(this, android.R.color.white));
         tvApellidos.setTypeface(null, android.graphics.Typeface.BOLD);
         tvApellidos.setGravity(Gravity.CENTER);
-        tvApellidos.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(35)));
+        tvApellidos.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(ALTURA_ENCABEZADO)));
         filaEncabezadoFija.addView(tvApellidos);
 
         tablaFija.addView(filaEncabezadoFija);
 
-        // FILA 2: Nombres de columnas hijas + promedio
-        TableRow filaColumnas = new TableRow(this);
-        filaColumnas.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
+        TableRow filaEncabezadoNotas = new TableRow(this);
+        filaEncabezadoNotas.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
 
-        for (GrupoColumnas grupo : grupos) {
-            // Columnas hijas
-            for (ColumnaHija columna : grupo.columnasHijas) {
-                TextView tvCol = new TextView(this);
-                tvCol.setText(columna.titulo);
-                tvCol.setTextSize(10);
-                tvCol.setTextColor(ContextCompat.getColor(this, android.R.color.white));
-                tvCol.setGravity(Gravity.CENTER);
-                tvCol.setLayoutParams(new TableRow.LayoutParams(dpToPx(columna.ancho), dpToPx(30)));
-                filaColumnas.addView(tvCol);
-            }
-            // Columna de promedio (si existe)
-            if (grupo.clavePromedio != null) {
-                TextView tvProm = new TextView(this);
-                tvProm.setText("PROMEDIO");
-                tvProm.setTextSize(10);
-                tvProm.setTextColor(ContextCompat.getColor(this, android.R.color.white));
-                tvProm.setTypeface(null, android.graphics.Typeface.BOLD);
-                tvProm.setGravity(Gravity.CENTER);
-                tvProm.setLayoutParams(new TableRow.LayoutParams(dpToPx(grupo.anchoPromedio), dpToPx(30)));
-                filaColumnas.addView(tvProm);
-            }
+        for (ColumnaConfig columna : columnas) {
+            TextView tvCol = new TextView(this);
+            tvCol.setText(columna.titulo);
+            tvCol.setTextSize(10);
+            tvCol.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+            tvCol.setTypeface(null, android.graphics.Typeface.BOLD);
+            tvCol.setGravity(Gravity.CENTER);
+            tvCol.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOTA), dpToPx(ALTURA_ENCABEZADO)));
+            filaEncabezadoNotas.addView(tvCol);
         }
-        tablaNotas.addView(filaColumnas);
 
-        // FILA 2 (fija): vacía (para alinear)
-        TableRow filaEncabezadoFija2 = new TableRow(this);
-        filaEncabezadoFija2.setBackgroundColor(ContextCompat.getColor(this, R.color.curso_primero));
-        TextView tvVacioF1 = new TextView(this);
-        tvVacioF1.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(30)));
-        filaEncabezadoFija2.addView(tvVacioF1);
-        TextView tvVacioF2 = new TextView(this);
-        tvVacioF2.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(30)));
-        filaEncabezadoFija2.addView(tvVacioF2);
-        tablaFija.addView(filaEncabezadoFija2);
+        TextView tvObs = new TextView(this);
+        tvObs.setText("OBSERVACIONES (T1)");
+        tvObs.setTextSize(10);
+        tvObs.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+        tvObs.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvObs.setGravity(Gravity.CENTER);
+        tvObs.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_OBSERVACIONES), dpToPx(ALTURA_ENCABEZADO)));
+        filaEncabezadoNotas.addView(tvObs);
+
+        tablaNotas.addView(filaEncabezadoNotas);
     }
 
     // ============================================================
     // FILAS DE ESTUDIANTES
     // ============================================================
     private void crearFilaEstudiante(Estudiante estudiante) {
+        if (tablaFija == null || tablaNotas == null) return;
+
         int colorFondo = estudiante.getNumero() % 2 == 0
                 ? ContextCompat.getColor(this, R.color.gris_claro)
                 : ContextCompat.getColor(this, android.R.color.white);
 
-        // FILA FIJA: N° y NOMBRE
         TableRow filaFija = new TableRow(this);
         filaFija.setBackgroundColor(colorFondo);
 
@@ -444,7 +428,7 @@ public class PrimeroActivity extends AppCompatActivity {
         tvNumero.setText(String.valueOf(estudiante.getNumero()));
         tvNumero.setTextSize(12);
         tvNumero.setGravity(Gravity.CENTER);
-        tvNumero.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(35)));
+        tvNumero.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(ALTURA_FILA)));
         filaFija.addView(tvNumero);
 
         TextView tvNombre = new TextView(this);
@@ -452,136 +436,138 @@ public class PrimeroActivity extends AppCompatActivity {
         tvNombre.setTextSize(11);
         tvNombre.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         tvNombre.setPadding(dpToPx(8), 0, dpToPx(8), 0);
-        tvNombre.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(35)));
+        tvNombre.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(ALTURA_FILA)));
         filaFija.addView(tvNombre);
 
         tablaFija.addView(filaFija);
 
-        // FILA DE NOTAS + PROMEDIOS
         TableRow filaNotas = new TableRow(this);
         filaNotas.setBackgroundColor(colorFondo);
 
-        for (GrupoColumnas grupo : grupos) {
-            // Columnas hijas
-            for (ColumnaHija columna : grupo.columnasHijas) {
-                String valor = estudiante.getNota(columna.claveFirebase);
-                // Determinar si es editable o no (solo las de TOTALES no editables)
-                boolean editable = !(columna.claveFirebase.equals("notaTrimestral100") ||
-                        columna.claveFirebase.equals("ponderaciones") ||
-                        columna.claveFirebase.equals("autoevaluacion") ||
-                        columna.claveFirebase.equals("notaParcial"));
+        for (ColumnaConfig columna : columnas) {
+            String valor = estudiante.getNota(columna.claveFirebase);
 
-                if (editable) {
-                    EditText editText = new EditText(this);
-                    editText.setText(valor);
-                    editText.setPadding(dpToPx(2), dpToPx(2), dpToPx(2), dpToPx(2));
-                    editText.setTextSize(11);
-                    editText.setGravity(Gravity.CENTER);
-                    editText.setBackgroundResource(android.R.drawable.edit_text);
-                    editText.setInputType(android.text.InputType.TYPE_CLASS_NUMBER |
-                            android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-                    editText.setSingleLine(true);
+            if (columna.editable) {
+                EditText editText = new EditText(this);
+                editText.setText(valor);
+                editText.setPadding(dpToPx(2), dpToPx(2), dpToPx(2), dpToPx(2));
+                editText.setTextSize(11);
+                editText.setGravity(Gravity.CENTER);
+                editText.setBackgroundResource(android.R.drawable.edit_text);
+                editText.setInputType(android.text.InputType.TYPE_CLASS_NUMBER |
+                        android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+                editText.setSingleLine(true);
 
-                    editText.addTextChangedListener(new TextWatcher() {
-                        @Override
-                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                editText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-                        @Override
-                        public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
-                        @Override
-                        public void afterTextChanged(Editable s) {
-                            String nuevoValor = s.toString().trim();
-                            if (nuevoValor.isEmpty()) nuevoValor = "--";
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        String nuevoValor = s.toString().trim();
+                        if (nuevoValor.isEmpty()) nuevoValor = "--";
 
-                            // Guardar cambio de la hija
-                            String key = estudiante.getKeyFirebase() + "_" + columna.claveFirebase;
-                            Map<String, Object> cambio = new HashMap<>();
-                            cambio.put("valor", nuevoValor);
-                            cambio.put("estudianteKey", estudiante.getKeyFirebase());
-                            cambio.put("claveFirebase", columna.claveFirebase);
-                            cambiosPendientes.put(key, cambio);
+                        String key = estudiante.getUid() + "_" + columna.claveFirebase;
+                        Map<String, Object> cambio = new HashMap<>();
+                        cambio.put("valor", nuevoValor);
+                        cambio.put("uid", estudiante.getUid());
+                        cambio.put("claveFirebase", columna.claveFirebase);
+                        cambiosPendientes.put(key, cambio);
+                        hayCambios = true;
 
-                            estudiante.setNota(columna.claveFirebase, nuevoValor);
+                        estudiante.setNota(columna.claveFirebase, nuevoValor);
 
-                            // Recalcular y guardar promedio del grupo (si existe)
-                            if (grupo.clavePromedio != null) {
-                                double promedio = calcularPromedioGrupo(estudiante, grupo);
-                                String valorProm = String.format("%.1f", promedio);
-                                String keyProm = estudiante.getKeyFirebase() + "_" + grupo.clavePromedio;
-                                Map<String, Object> cambioProm = new HashMap<>();
-                                cambioProm.put("valor", valorProm);
-                                cambioProm.put("estudianteKey", estudiante.getKeyFirebase());
-                                cambioProm.put("claveFirebase", grupo.clavePromedio);
-                                cambiosPendientes.put(keyProm, cambioProm);
-                                estudiante.setNota(grupo.clavePromedio, valorProm);
-
-                                // Actualizar la celda de promedio visualmente (opcional, pero se refresca al recargar)
-                                // Para simplificar, recargamos toda la tabla al perder foco o al guardar.
-                                // Aquí podrías forzar un refresh, pero es costoso. Mejor al guardar.
-                            }
+                        if (tvTituloCurso != null) {
+                            tvTituloCurso.setText("PRIMERO C - MATEMÁTICA * (" + cambiosPendientes.size() + " cambios)");
                         }
-                    });
+                    }
+                });
 
-                    editText.setLayoutParams(new TableRow.LayoutParams(dpToPx(columna.ancho), dpToPx(35)));
-                    filaNotas.addView(editText);
-                } else {
-                    // No editable (TextView)
-                    TextView tv = new TextView(this);
-                    tv.setText(valor);
-                    tv.setTextSize(11);
-                    tv.setGravity(Gravity.CENTER);
-                    tv.setLayoutParams(new TableRow.LayoutParams(dpToPx(columna.ancho), dpToPx(35)));
-                    filaNotas.addView(tv);
+                editText.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOTA), dpToPx(ALTURA_FILA)));
+                filaNotas.addView(editText);
+            } else {
+                TextView tv = new TextView(this);
+                tv.setText(valor);
+                tv.setTextSize(11);
+                tv.setGravity(Gravity.CENTER);
+                if (columna.claveFirebase.equals("promedio")) {
+                    tv.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark));
+                    tv.setTypeface(null, android.graphics.Typeface.BOLD);
                 }
-            }
-
-            // Columna de PROMEDIO (si existe)
-            if (grupo.clavePromedio != null) {
-                String valorProm = estudiante.getNota(grupo.clavePromedio);
-                // Si no existe, calcular y asignar
-                if (valorProm.equals("--")) {
-                    double promedio = calcularPromedioGrupo(estudiante, grupo);
-                    valorProm = String.format("%.1f", promedio);
-                    estudiante.setNota(grupo.clavePromedio, valorProm);
-                }
-                TextView tvProm = new TextView(this);
-                tvProm.setText(valorProm);
-                tvProm.setTextSize(12);
-                tvProm.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark));
-                tvProm.setTypeface(null, android.graphics.Typeface.BOLD);
-                tvProm.setGravity(Gravity.CENTER);
-                tvProm.setLayoutParams(new TableRow.LayoutParams(dpToPx(grupo.anchoPromedio), dpToPx(35)));
-                filaNotas.addView(tvProm);
+                tv.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOTA), dpToPx(ALTURA_FILA)));
+                filaNotas.addView(tv);
             }
         }
+
+        // ============================================================
+        // COLUMNA OBSERVACIONES - TRIMESTRE 1
+        // ============================================================
+        String observacion = mapaObservaciones.getOrDefault(estudiante.getUid(), "");
+        EditText editTextObs = new EditText(this);
+        editTextObs.setText(observacion);
+        editTextObs.setPadding(dpToPx(4), dpToPx(2), dpToPx(4), dpToPx(2));
+        editTextObs.setTextSize(11);
+        editTextObs.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        editTextObs.setBackgroundResource(android.R.drawable.edit_text);
+        editTextObs.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
+                android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        editTextObs.setSingleLine(false);
+        editTextObs.setMaxLines(3);
+        editTextObs.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_OBSERVACIONES), dpToPx(ALTURA_FILA)));
+
+        editTextObs.addTextChangedListener(new TextWatcher() {
+            private String textoAnterior = observacion;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String nuevoTexto = s.toString().trim();
+
+                if (!nuevoTexto.equals(textoAnterior)) {
+                    textoAnterior = nuevoTexto;
+
+                    if (nuevoTexto.isEmpty()) {
+                        mapaObservaciones.remove(estudiante.getUid());
+                    } else {
+                        mapaObservaciones.put(estudiante.getUid(), nuevoTexto);
+                    }
+
+                    String key = estudiante.getUid() + "_observacion";
+                    Map<String, Object> cambio = new HashMap<>();
+                    cambio.put("valor", nuevoTexto);
+                    cambio.put("uid", estudiante.getUid());
+                    cambio.put("claveFirebase", "observacion");
+                    cambiosPendientes.put(key, cambio);
+                    hayCambios = true;
+
+                    if (tvTituloCurso != null) {
+                        tvTituloCurso.setText("PRIMERO C - MATEMÁTICA * (" + cambiosPendientes.size() + " cambios)");
+                    }
+                }
+            }
+        });
+
+        filaNotas.addView(editTextObs);
 
         tablaNotas.addView(filaNotas);
     }
 
     // ============================================================
-    // CÁLCULO DE PROMEDIO DE UN GRUPO
-    // ============================================================
-    private double calcularPromedioGrupo(Estudiante estudiante, GrupoColumnas grupo) {
-        double suma = 0;
-        int count = 0;
-        for (ColumnaHija columna : grupo.columnasHijas) {
-            double valor = estudiante.getNotaValor(columna.claveFirebase);
-            if (valor >= 0) {
-                suma += valor;
-                count++;
-            }
-        }
-        return count > 0 ? suma / count : 0;
-    }
-
-    // ============================================================
-    // FILA DE TOTALES (PROMEDIOS POR COLUMNA)
+    // FILA DE TOTALES
     // ============================================================
     private void crearFilaTotales() {
+        if (tablaFija == null || tablaNotas == null) return;
+
         int colorFondo = ContextCompat.getColor(this, R.color.color_secundario);
 
-        // FILA TOTALES FIJA
         TableRow filaTotalesFija = new TableRow(this);
         filaTotalesFija.setBackgroundColor(colorFondo);
 
@@ -591,107 +577,137 @@ public class PrimeroActivity extends AppCompatActivity {
         tvTotales.setTextColor(ContextCompat.getColor(this, android.R.color.white));
         tvTotales.setTypeface(null, android.graphics.Typeface.BOLD);
         tvTotales.setGravity(Gravity.CENTER);
-        tvTotales.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(35)));
+        tvTotales.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NUMERO), dpToPx(ALTURA_FILA)));
         filaTotalesFija.addView(tvTotales);
 
         TextView tvVacia = new TextView(this);
-        tvVacia.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(35)));
+        tvVacia.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOMBRE), dpToPx(ALTURA_FILA)));
         filaTotalesFija.addView(tvVacia);
 
         tablaFija.addView(filaTotalesFija);
 
-        // FILA TOTALES DE NOTAS
         TableRow filaTotalesNotas = new TableRow(this);
         filaTotalesNotas.setBackgroundColor(colorFondo);
 
-        for (GrupoColumnas grupo : grupos) {
-            // Promedios de columnas hijas
-            for (ColumnaHija columna : grupo.columnasHijas) {
-                double suma = 0;
-                int count = 0;
-                for (Estudiante estudiante : listaEstudiantes) {
-                    double valor = estudiante.getNotaValor(columna.claveFirebase);
-                    if (valor >= 0) {
-                        suma += valor;
-                        count++;
-                    }
+        for (ColumnaConfig columna : columnas) {
+            double suma = 0;
+            int count = 0;
+            for (Estudiante estudiante : listaEstudiantes) {
+                double valor = estudiante.getNotaValor(columna.claveFirebase);
+                if (valor >= 0) {
+                    suma += valor;
+                    count++;
                 }
-                double promedio = count > 0 ? suma / count : 0;
-                TextView tvProm = new TextView(this);
-                tvProm.setText(String.format("%.1f", promedio));
-                tvProm.setTextSize(11);
-                tvProm.setTextColor(ContextCompat.getColor(this, android.R.color.white));
-                tvProm.setTypeface(null, android.graphics.Typeface.BOLD);
-                tvProm.setGravity(Gravity.CENTER);
-                tvProm.setLayoutParams(new TableRow.LayoutParams(dpToPx(columna.ancho), dpToPx(35)));
-                filaTotalesNotas.addView(tvProm);
             }
-            // Promedio del grupo (si existe)
-            if (grupo.clavePromedio != null) {
-                double suma = 0;
-                int count = 0;
-                for (Estudiante estudiante : listaEstudiantes) {
-                    double valor = estudiante.getNotaValor(grupo.clavePromedio);
-                    if (valor >= 0) {
-                        suma += valor;
-                        count++;
-                    }
-                }
-                double promedio = count > 0 ? suma / count : 0;
-                TextView tvProm = new TextView(this);
-                tvProm.setText(String.format("%.1f", promedio));
-                tvProm.setTextSize(12);
-                tvProm.setTextColor(ContextCompat.getColor(this, android.R.color.white));
-                tvProm.setTypeface(null, android.graphics.Typeface.BOLD);
-                tvProm.setGravity(Gravity.CENTER);
-                tvProm.setLayoutParams(new TableRow.LayoutParams(dpToPx(grupo.anchoPromedio), dpToPx(35)));
-                filaTotalesNotas.addView(tvProm);
-            }
+            double promedio = count > 0 ? suma / count : 0;
+
+            TextView tvProm = new TextView(this);
+            tvProm.setText(String.format("%.1f", promedio));
+            tvProm.setTextSize(11);
+            tvProm.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+            tvProm.setTypeface(null, android.graphics.Typeface.BOLD);
+            tvProm.setGravity(Gravity.CENTER);
+            tvProm.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_NOTA), dpToPx(ALTURA_FILA)));
+            filaTotalesNotas.addView(tvProm);
         }
+
+        TextView tvObsVacia = new TextView(this);
+        tvObsVacia.setText("");
+        tvObsVacia.setLayoutParams(new TableRow.LayoutParams(dpToPx(ANCHO_OBSERVACIONES), dpToPx(ALTURA_FILA)));
+        filaTotalesNotas.addView(tvObsVacia);
 
         tablaNotas.addView(filaTotalesNotas);
     }
 
     // ============================================================
-    // GUARDAR EN FIREBASE
+    // GUARDAR OBSERVACIÓN - TRIMESTRE 1
     // ============================================================
-    private void guardarTodosLosCambios() {
-        if (cambiosPendientes.isEmpty()) {
-            Toast.makeText(this, "No hay cambios para guardar", Toast.LENGTH_SHORT).show();
+    private void guardarObservacion(String uid, String texto) {
+        if (texto == null || texto.isEmpty()) {
+            // Si el texto está vacío, eliminar la observación
+            dbRef.child("observaciones").child(uid).child(trimestreActual).removeValue()
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d("FIREBASE", "🗑️ Observación eliminada para: " + uid + " - " + trimestreActual);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("FIREBASE", "❌ Error al eliminar: " + e.getMessage());
+                    });
             return;
         }
 
-        Toast.makeText(this, "Guardando cambios (" + cambiosPendientes.size() + ")", Toast.LENGTH_SHORT).show();
+        // ✅ Guardar en observaciones/[uid]/trimestre1/texto
+        DatabaseReference ref = dbRef
+                .child("observaciones")
+                .child(uid)
+                .child(trimestreActual);
+
+        Map<String, Object> obsData = new HashMap<>();
+        obsData.put("texto", texto);
+
+        ref.setValue(obsData)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("FIREBASE", "✅ Observación T1 guardada: " + uid + " - " + texto);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("FIREBASE", "❌ Error: " + e.getMessage());
+                });
+    }
+
+    // ============================================================
+    // GUARDAR TODOS LOS CAMBIOS
+    // ============================================================
+    private void guardarTodosLosCambios() {
+        if (cambiosPendientes.isEmpty()) {
+            Toast.makeText(this, "✅ No hay cambios para guardar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Toast.makeText(this, "💾 Guardando " + cambiosPendientes.size() + " cambios...", Toast.LENGTH_SHORT).show();
 
         for (Map.Entry<String, Map<String, Object>> entry : cambiosPendientes.entrySet()) {
             Map<String, Object> cambio = entry.getValue();
-            String estudianteKey = (String) cambio.get("estudianteKey");
+            String uid = (String) cambio.get("uid");
             String claveFirebase = (String) cambio.get("claveFirebase");
             String valor = (String) cambio.get("valor");
 
-            DatabaseReference ref = databaseReference
-                    .child(estudianteKey)
-                    .child("calificaciones")
-                    .child(claveFirebase);
+            if (claveFirebase.equals("observacion")) {
+                guardarObservacion(uid, valor);
+            } else {
+                DatabaseReference ref = dbRef
+                        .child("calificaciones")
+                        .child(gradoActual)
+                        .child(uid)
+                        .child(trimestreActual)
+                        .child(materiaActual)
+                        .child(claveFirebase);
 
-            Object valorGuardar = valor.equals("--") ? null : valor;
+                Object valorGuardar = valor.equals("--") ? null : valor;
 
-            ref.setValue(valorGuardar)
-                    .addOnSuccessListener(aVoid -> {
-                        Log.d("Firebase", "Guardado: " + estudianteKey + " - " + claveFirebase + " = " + valor);
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e("Firebase", "Error al guardar: " + e.getMessage());
-                        Toast.makeText(PrimeroActivity.this,
-                                "Error al guardar: " + estudianteKey,
-                                Toast.LENGTH_SHORT).show();
-                    });
+                ref.setValue(valorGuardar)
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d("FIREBASE", "✅ Guardado: " + uid + " - " + claveFirebase);
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e("FIREBASE", "❌ Error: " + e.getMessage());
+                        });
+            }
         }
 
         cambiosPendientes.clear();
-        Toast.makeText(this, "Cambios guardados exitosamente", Toast.LENGTH_SHORT).show();
+        hayCambios = false;
+
+        if (tvTituloCurso != null) {
+            tvTituloCurso.setText("PRIMERO C - MATEMÁTICA (TRIMESTRE 1) - " +
+                    listaEstudiantes.size() + " alumnos");
+        }
+
+        Toast.makeText(this, "✅ Todos los cambios guardados", Toast.LENGTH_SHORT).show();
+        cargarObservaciones();
     }
 
+    // ============================================================
+    // UTILIDADES
+    // ============================================================
     private int dpToPx(int dp) {
         float density = getResources().getDisplayMetrics().density;
         return Math.round(dp * density);

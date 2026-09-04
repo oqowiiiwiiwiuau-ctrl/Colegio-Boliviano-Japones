@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.pdf.PdfDocument;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,20 +28,47 @@ import com.google.firebase.database.ValueEventListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public class DashboardFragment extends Fragment {
 
     private FragmentDashboardBinding binding;
     private SharedPreferences prefs;
 
-    // Materias
-    private final String[] materias = {
-            "Matemática", "Física", "Química", "Historia",
-            "Lenguaje", "Educación Física", "Religión"
+    // ============================================================
+    // CONFIGURACIÓN
+    // ============================================================
+    private String gradoActual = "primeroC";
+    private String trimestreActual = "trimestre1";
+    private String materiaActual = "matematica";
+    private String currentDate = "2026-08-20";
+
+    // Mapa para guardar UID -> Nombre
+    private Map<String, String> mapaUidANombre = new HashMap<>();
+    private Map<String, String> mapaNombreAUid = new HashMap<>();
+    private boolean nombresCargados = false;
+
+    // ============================================================
+    // LISTA DE TRIMESTRES Y MATERIAS
+    // ============================================================
+    private final String[] trimestres = {
+            "trimestre1", "trimestre2", "trimestre3"
     };
 
-    // Variable para almacenar el nombre del estudiante actual
-    private String currentStudentName = "";
+    private final String[] trimestresNombres = {
+            "Trimestre 1", "Trimestre 2", "Trimestre 3"
+    };
+
+    private final String[] materias = {
+            "Matemática"
+    };
+
+    // Variable para almacenar el UID del estudiante actual
+    private String currentStudentUid = "";
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -64,12 +92,15 @@ public class DashboardFragment extends Fragment {
         // Configurar botón de exportar PDF
         setupPdfButton();
 
+        // Cargar nombres de estudiantes
+        cargarNombresEstudiantes();
+
         return root;
     }
 
-    /**
-     * Configura la visibilidad inicial de los elementos
-     */
+    // ============================================================
+    // CONFIGURACIÓN INICIAL
+    // ============================================================
     private void setupInitialVisibility() {
         binding.textStudentName.setVisibility(View.GONE);
         binding.spinnerMaterias.setVisibility(View.GONE);
@@ -77,9 +108,101 @@ public class DashboardFragment extends Fragment {
         binding.btnExportarPDF.setVisibility(View.GONE);
     }
 
-    /**
-     * Configura el spinner de materias
-     */
+    // ============================================================
+    // CARGAR NOMBRES DE ESTUDIANTES
+    // ============================================================
+    private void cargarNombresEstudiantes() {
+        FirebaseDatabase.getInstance().getReference("estudiantes")
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        mapaUidANombre.clear();
+                        mapaNombreAUid.clear();
+                        nombresCargados = true;
+
+                        if (snapshot.exists()) {
+                            for (DataSnapshot child : snapshot.getChildren()) {
+                                String uid = child.getKey();
+                                String nombre = child.child("nombre").getValue(String.class);
+                                String grado = child.child("grado").getValue(String.class);
+
+                                if (nombre != null && !nombre.isEmpty() && grado != null && grado.equals(gradoActual)) {
+                                    String nombreMayusculas = nombre.toUpperCase();
+                                    mapaUidANombre.put(uid, nombreMayusculas);
+                                    mapaNombreAUid.put(nombreMayusculas, uid);
+                                    Log.d("DASHBOARD", "📌 Cargado: " + uid + " -> " + nombreMayusculas);
+                                }
+                            }
+                        }
+
+                        Log.d("DASHBOARD", "📊 Total estudiantes cargados: " + mapaUidANombre.size());
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e("DASHBOARD", "❌ Error al cargar nombres: " + error.getMessage());
+                        nombresCargados = false;
+                    }
+                });
+    }
+
+    // ============================================================
+    // CONVERTIR NOMBRE A UID
+    // ============================================================
+    private String convertirNombreAUid(String nombre) {
+        if (!nombresCargados || mapaNombreAUid.isEmpty()) {
+            cargarNombresEstudiantes();
+            return null;
+        }
+
+        String nombreUpper = nombre.trim().toUpperCase();
+
+        if (mapaNombreAUid.containsKey(nombreUpper)) {
+            return mapaNombreAUid.get(nombreUpper);
+        }
+
+        // Buscar coincidencia parcial
+        String mejorCoincidencia = null;
+        int minDiferencia = Integer.MAX_VALUE;
+
+        for (String key : mapaNombreAUid.keySet()) {
+            int distancia = calcularDistancia(key, nombreUpper);
+            if (distancia < minDiferencia && distancia < 5) {
+                minDiferencia = distancia;
+                mejorCoincidencia = key;
+            }
+        }
+
+        if (mejorCoincidencia != null) {
+            return mapaNombreAUid.get(mejorCoincidencia);
+        }
+
+        return null;
+    }
+
+    // ============================================================
+    // CALCULAR DISTANCIA DE LEVENSHTEIN
+    // ============================================================
+    private int calcularDistancia(String s1, String s2) {
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+        for (int i = 0; i <= s1.length(); i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= s2.length(); j++) {
+            dp[0][j] = j;
+        }
+        for (int i = 1; i <= s1.length(); i++) {
+            for (int j = 1; j <= s2.length(); j++) {
+                int cost = s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1;
+                dp[i][j] = Math.min(Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
+            }
+        }
+        return dp[s1.length()][s2.length()];
+    }
+
+    // ============================================================
+    // CONFIGURAR SPINNER DE MATERIAS
+    // ============================================================
     private void setupSpinner() {
         Spinner spinner = binding.spinnerMaterias;
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -89,82 +212,86 @@ public class DashboardFragment extends Fragment {
         );
         spinner.setAdapter(adapter);
 
-        // Cargar selección anterior
         spinner.setSelection(prefs.getInt("LAST_MATERIA_INDEX", 0));
 
-        // Listener para cuando se selecciona una materia
         spinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                if (!TextUtils.isEmpty(currentStudentName)) {
+                if (!TextUtils.isEmpty(currentStudentUid)) {
                     String materiaSeleccionada = materias[position];
                     binding.textMateriaTitulo.setText(materiaSeleccionada);
-                    cargarDatosEstudiante(currentStudentName, materiaSeleccionada);
-
-                    // Guardar preferencia
+                    cargarDatosEstudiante(currentStudentUid, materiaSeleccionada);
                     prefs.edit().putInt("LAST_MATERIA_INDEX", position).apply();
                 }
             }
 
             @Override
-            public void onNothingSelected(android.widget.AdapterView<?> parent) {
-                // No action needed
-            }
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
     }
 
-    /**
-     * Configura el botón de búsqueda
-     */
+    // ============================================================
+    // CONFIGURAR BOTÓN DE BÚSQUEDA
+    // ============================================================
     private void setupSearchButton() {
-        binding.btnBuscarDatos.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                buscarDatosEstudiante();
-            }
-        });
+        binding.btnBuscarDatos.setOnClickListener(v -> buscarDatosEstudiante());
     }
 
-    /**
-     * Configura el botón de exportar PDF
-     */
+    // ============================================================
+    // CONFIGURAR BOTÓN DE EXPORTAR PDF
+    // ============================================================
     private void setupPdfButton() {
-        binding.btnExportarPDF.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                exportarPDF();
-            }
-        });
+        binding.btnExportarPDF.setOnClickListener(v -> exportarPDF());
     }
 
-    /**
-     * Busca los datos del estudiante ingresado
-     */
+    // ============================================================
+    // BUSCAR DATOS DEL ESTUDIANTE
+    // ============================================================
     private void buscarDatosEstudiante() {
         String nombreEstudiante = binding.editTextStudentName.getText().toString().trim();
 
-        // Validar entrada
         if (TextUtils.isEmpty(nombreEstudiante)) {
             Toast.makeText(requireContext(), "Por favor ingresa un nombre de estudiante", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Establecer el nombre del estudiante actual
-        currentStudentName = nombreEstudiante;
-        binding.textStudentName.setText("Estudiante: " + currentStudentName);
+        // Mostrar mensaje de carga
+        binding.textNotas.setText("🔍 Buscando estudiante...");
+
+        // Verificar si los nombres están cargados
+        if (!nombresCargados || mapaNombreAUid.isEmpty()) {
+            Toast.makeText(requireContext(), "Cargando lista de estudiantes...", Toast.LENGTH_SHORT).show();
+            cargarNombresEstudiantes();
+            // Reintentar después de 1 segundo
+            new android.os.Handler().postDelayed(() -> buscarDatosEstudiante(), 1000);
+            return;
+        }
+
+        // Convertir nombre a UID
+        String uid = convertirNombreAUid(nombreEstudiante);
+
+        if (uid == null) {
+            Toast.makeText(requireContext(), "❌ Estudiante no encontrado", Toast.LENGTH_SHORT).show();
+            binding.textNotas.setText("❌ Estudiante no encontrado en el sistema");
+            return;
+        }
+
+        currentStudentUid = uid;
+        String nombreMostrar = mapaUidANombre.getOrDefault(uid, nombreEstudiante);
+        binding.textStudentName.setText("👤 " + nombreMostrar);
 
         // Mostrar elementos de la UI
         mostrarElementosUI();
 
-        // Cargar datos de la primera materia por defecto
+        // Cargar datos de la primera materia
         String primeraMateria = materias[0];
         binding.textMateriaTitulo.setText(primeraMateria);
-        cargarDatosEstudiante(currentStudentName, primeraMateria);
+        cargarDatosEstudiante(currentStudentUid, primeraMateria);
     }
 
-    /**
-     * Muestra los elementos de la UI después de la búsqueda
-     */
+    // ============================================================
+    // MOSTRAR ELEMENTOS UI
+    // ============================================================
     private void mostrarElementosUI() {
         binding.textStudentName.setVisibility(View.VISIBLE);
         binding.spinnerMaterias.setVisibility(View.VISIBLE);
@@ -172,82 +299,98 @@ public class DashboardFragment extends Fragment {
         binding.btnExportarPDF.setVisibility(View.VISIBLE);
     }
 
-    /**
-     * Carga los datos del estudiante desde Firebase Realtime Database
-     */
-    private void cargarDatosEstudiante(String studentName, String materia) {
+    // ============================================================
+    // CARGAR DATOS DEL ESTUDIANTE (TODOS LOS TRIMESTRES)
+    // ============================================================
+    private void cargarDatosEstudiante(String uid, String materia) {
         // Mostrar estado de carga
-        binding.textNotas.setText("Cargando datos de " + materia + "...");
+        binding.textNotas.setText("📥 Cargando datos de " + materia + "...");
 
-        try {
-            // Obtener referencia a Firebase con URL específica
-            FirebaseDatabase database = FirebaseDatabase.getInstance("https://colegio-71940-default-rtdb.firebaseio.com/");
-            DatabaseReference ref = database.getReference("alumnos")
-                    .child(studentName)
-                    .child(materia);
+        // Buscar en calificaciones/[grado]/[uid]/trimestre1/matematica
+        DatabaseReference ref = FirebaseDatabase.getInstance()
+                .getReference("calificaciones")
+                .child(gradoActual)
+                .child(uid);
 
-            // Leer datos una vez
-            ref.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (!snapshot.exists()) {
-                        binding.textNotas.setText("No se encontraron datos para " + studentName + " en " + materia);
-                        return;
-                    }
+        // Obtener el nombre del estudiante para mostrar
+        String nombreEstudiante = mapaUidANombre.getOrDefault(uid, uid);
 
-                    // Procesar y mostrar los datos
-                    StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.append("Notas de ").append(studentName).append(" - ").append(materia).append("\n\n");
-
-                    for (DataSnapshot bimestreSnapshot : snapshot.getChildren()) {
-                        String nombreBimestre = bimestreSnapshot.getKey();
-                        String practicas = obtenerValorSeguro(bimestreSnapshot.child("practicas"));
-                        String examenFinal = obtenerValorSeguro(bimestreSnapshot.child("final"));
-                        String promedio = obtenerValorSeguro(bimestreSnapshot.child("promedio"));
-
-                        stringBuilder.append("📊 ").append(nombreBimestre).append(":\n")
-                                .append("   • Prácticas: ").append(practicas).append("\n")
-                                .append("   • Examen Final: ").append(examenFinal).append("\n")
-                                .append("   • Promedio: ").append(promedio).append("\n\n");
-                    }
-
-                    binding.textNotas.setText(stringBuilder.toString());
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!snapshot.exists()) {
+                    binding.textNotas.setText("❌ No se encontraron datos para " + nombreEstudiante);
+                    return;
                 }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    String errorMessage = "Error al cargar datos: " + error.getMessage();
-                    binding.textNotas.setText(errorMessage);
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append("📊 NOTAS DE ").append(nombreEstudiante.toUpperCase()).append("\n");
+                stringBuilder.append("📚 Materia: ").append(materia).append("\n");
+                stringBuilder.append("📅 ").append(currentDate).append("\n");
+                stringBuilder.append("─────────────────────\n\n");
 
-                    // Mostrar Toast con más detalles
-                    if (error.getCode() == DatabaseError.PERMISSION_DENIED) {
-                        Toast.makeText(requireContext(),
-                                "Error de permisos. Verifica las reglas de seguridad en Firebase Console",
-                                Toast.LENGTH_LONG).show();
+                // Recorrer los 3 trimestres
+                for (int i = 0; i < trimestres.length; i++) {
+                    String trimestreKey = trimestres[i];
+                    String trimestreNombre = trimestresNombres[i];
+
+                    DataSnapshot trimestreSnapshot = snapshot.child(trimestreKey).child("matematica");
+
+                    if (trimestreSnapshot.exists()) {
+                        String ser = obtenerValorSeguro(trimestreSnapshot.child("ser"));
+                        String saber = obtenerValorSeguro(trimestreSnapshot.child("saber"));
+                        String hacer = obtenerValorSeguro(trimestreSnapshot.child("hacer"));
+                        String promedio = obtenerValorSeguro(trimestreSnapshot.child("promedio"));
+                        String total = obtenerValorSeguro(trimestreSnapshot.child("total"));
+                        String autoevaluacion = obtenerValorSeguro(trimestreSnapshot.child("autoevaluacion"));
+                        String notaParcial = obtenerValorSeguro(trimestreSnapshot.child("nota parcial"));
+                        String ponderacion = obtenerValorSeguro(trimestreSnapshot.child("ponderacion"));
+                        String notaTrimestral = obtenerValorSeguro(trimestreSnapshot.child("nota trimestral"));
+
+                        stringBuilder.append("📌 ").append(trimestreNombre).append("\n");
+                        stringBuilder.append("   • SER: ").append(ser).append("\n");
+                        stringBuilder.append("   • SABER: ").append(saber).append("\n");
+                        stringBuilder.append("   • HACER: ").append(hacer).append("\n");
+                        stringBuilder.append("   • PROMEDIO: ").append(promedio).append("\n");
+                        stringBuilder.append("   • TOTAL: ").append(total).append("\n");
+                        stringBuilder.append("   • AUTOEVALUACIÓN: ").append(autoevaluacion).append("\n");
+                        stringBuilder.append("   • NOTA PARCIAL: ").append(notaParcial).append("\n");
+                        stringBuilder.append("   • PONDERACIÓN: ").append(ponderacion).append("\n");
+                        stringBuilder.append("   • NOTA TRIMESTRAL: ").append(notaTrimestral).append("\n\n");
+                    } else {
+                        stringBuilder.append("📌 ").append(trimestreNombre).append("\n");
+                        stringBuilder.append("   ❌ Sin datos registrados\n\n");
                     }
                 }
-            });
 
-        } catch (Exception e) {
-            binding.textNotas.setText("Error inesperado: " + e.getMessage());
-        }
+                binding.textNotas.setText(stringBuilder.toString());
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                String errorMessage = "Error al cargar datos: " + error.getMessage();
+                binding.textNotas.setText(errorMessage);
+                Toast.makeText(requireContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    /**
-     * Obtiene un valor seguro de DataSnapshot
-     */
+    // ============================================================
+    // OBTENER VALOR SEGURO
+    // ============================================================
     private String obtenerValorSeguro(DataSnapshot snapshot) {
         if (snapshot.exists() && snapshot.getValue() != null) {
-            return snapshot.getValue(String.class);
+            Object valor = snapshot.getValue();
+            return valor.toString();
         }
         return "--";
     }
 
-    /**
-     * Exporta los datos a PDF
-     */
+    // ============================================================
+    // EXPORTAR A PDF
+    // ============================================================
     private void exportarPDF() {
-        if (TextUtils.isEmpty(currentStudentName)) {
+        if (TextUtils.isEmpty(currentStudentUid)) {
             Toast.makeText(requireContext(), "Primero busca un estudiante", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -255,7 +398,7 @@ public class DashboardFragment extends Fragment {
         String materiaActual = binding.textMateriaTitulo.getText().toString();
         String contenidoNotas = binding.textNotas.getText().toString();
 
-        if (TextUtils.isEmpty(contenidoNotas) || contenidoNotas.equals("Cargando datos...")) {
+        if (TextUtils.isEmpty(contenidoNotas) || contenidoNotas.contains("Cargando")) {
             Toast.makeText(requireContext(), "No hay datos para exportar", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -263,9 +406,9 @@ public class DashboardFragment extends Fragment {
         generarPDF(materiaActual, contenidoNotas);
     }
 
-    /**
-     * Genera el archivo PDF con las notas
-     */
+    // ============================================================
+    // GENERAR PDF
+    // ============================================================
     private void generarPDF(String materia, String contenido) {
         PdfDocument pdfDocument = new PdfDocument();
         Paint paint = new Paint();
@@ -276,32 +419,33 @@ public class DashboardFragment extends Fragment {
             PdfDocument.Page page = pdfDocument.startPage(pageInfo);
             Canvas canvas = page.getCanvas();
 
-            // Configurar paint para el título
-            paint.setColor(0xFF333333); // Color gris oscuro
+            // Título
+            paint.setColor(0xFF333333);
             paint.setTextSize(24);
             paint.setFakeBoldText(true);
             canvas.drawText("BOLETÍN DE NOTAS", 150, 60, paint);
 
-            // Información del estudiante y materia
+            // Información
             paint.setTextSize(16);
             paint.setFakeBoldText(false);
-            canvas.drawText("Estudiante: " + currentStudentName, 40, 110, paint);
+            String nombreEstudiante = mapaUidANombre.getOrDefault(currentStudentUid, currentStudentUid);
+            canvas.drawText("Estudiante: " + nombreEstudiante, 40, 110, paint);
             canvas.drawText("Materia: " + materia, 40, 140, paint);
-            canvas.drawText("Fecha: " + java.text.DateFormat.getDateTimeInstance().format(new java.util.Date()), 40, 170, paint);
+            canvas.drawText("Fecha: " + new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    .format(new Date()), 40, 170, paint);
 
             // Línea separadora
             paint.setStrokeWidth(2);
             canvas.drawLine(40, 190, 555, 190, paint);
 
-            // Contenido de las notas
+            // Contenido de notas
             paint.setTextSize(12);
             int posicionY = 220;
 
-            // Dividir el contenido en líneas
             String[] lineas = contenido.split("\n");
 
             for (String linea : lineas) {
-                if (posicionY > 800) { // Nueva página si se llega al final
+                if (posicionY > 800) {
                     pdfDocument.finishPage(page);
                     page = pdfDocument.startPage(pageInfo);
                     canvas = page.getCanvas();
@@ -319,7 +463,7 @@ public class DashboardFragment extends Fragment {
                 directorio.mkdirs();
             }
 
-            String nombreArchivo = "Boletin_" + currentStudentName + "_" + materia + ".pdf";
+            String nombreArchivo = "Boletin_" + currentStudentUid + "_" + materia + ".pdf";
             File archivoPDF = new File(directorio, nombreArchivo);
 
             FileOutputStream outputStream = new FileOutputStream(archivoPDF);
@@ -335,7 +479,6 @@ public class DashboardFragment extends Fragment {
                     "❌ Error al crear PDF: " + e.getMessage(),
                     Toast.LENGTH_LONG).show();
         } finally {
-            // Cerrar el documento
             if (pdfDocument != null) {
                 pdfDocument.close();
             }

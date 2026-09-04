@@ -25,7 +25,9 @@ import com.graficar.colegio.databinding.FragmentHomeBinding;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class HomeFragment extends Fragment {
 
@@ -44,6 +46,14 @@ public class HomeFragment extends Fragment {
     // Fecha actual
     private String currentDate;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
+    // Mapa para guardar UID -> Nombre (TODO EN MAYÚSCULAS)
+    private Map<String, String> mapaUidANombre = new HashMap<>();          // uid -> nombre (mayúsculas)
+    private Map<String, String> mapaNombreAUid = new HashMap<>();          // nombre (mayúsculas) -> uid
+    private boolean nombresCargados = false;
+
+    // Grado actual
+    private String gradoActual = "primeroC";
 
     @Nullable
     @Override
@@ -68,9 +78,6 @@ public class HomeFragment extends Fragment {
         // currentDate = dateFormat.format(new Date()); // ← COMENTADO
         currentDate = "2026-08-20"; // ← FECHA DE TU FIREBASE
 
-        // Si quieres usar la fecha actual, descomenta la línea de arriba
-        // y comenta la de abajo
-
         // Actualizar fecha en UI
         TextView tvDate = root.findViewById(R.id.textViewDate);
         if (tvDate != null) {
@@ -78,7 +85,10 @@ public class HomeFragment extends Fragment {
         }
 
         // Inicializar Firebase
-        databaseReference = FirebaseDatabase.getInstance().getReference("asistencias");
+        databaseReference = FirebaseDatabase.getInstance().getReference();
+
+        // Cargar los nombres de los estudiantes
+        cargarNombresEstudiantes();
 
         // Botón de búsqueda
         btnBuscar.setOnClickListener(v -> {
@@ -104,80 +114,188 @@ public class HomeFragment extends Fragment {
         return root;
     }
 
-    /**
-     * Convierte un nombre ingresado por el usuario al formato de Firebase.
-     */
-    private String convertirClaveFirebase(String nombre) {
-        String limpio = nombre.trim();
-        limpio = limpio.replace("_", " ");
-        limpio = limpio.replaceAll("\\s+", " ");
-        limpio = limpio.toUpperCase();
-        limpio = limpio.replace(" ", "_");
-        return limpio;
+    // ============================================================
+    // CARGAR NOMBRES DE ESTUDIANTES (TODO EN MAYÚSCULAS)
+    // ============================================================
+    private void cargarNombresEstudiantes() {
+        Log.d("ASISTENCIA", "📥 CARGANDO NOMBRES DE ESTUDIANTES...");
+
+        textViewStatus.setText("🔄 Cargando lista de estudiantes...");
+        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark));
+
+        databaseReference.child("estudiantes").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                mapaUidANombre.clear();
+                mapaNombreAUid.clear();
+                nombresCargados = true;
+
+                Log.d("ASISTENCIA", "📊 Total estudiantes en Firebase: " + snapshot.getChildrenCount());
+
+                if (snapshot.exists()) {
+                    for (DataSnapshot child : snapshot.getChildren()) {
+                        String uid = child.getKey();
+                        String nombre = child.child("nombre").getValue(String.class);
+                        String grado = child.child("grado").getValue(String.class);
+
+                        Log.d("ASISTENCIA", "  🔍 UID: " + uid + ", Nombre: " + nombre + ", Grado: " + grado);
+
+                        if (nombre != null && !nombre.isEmpty() && grado != null && grado.equals(gradoActual)) {
+                            // ✅ Guardar TODO en MAYÚSCULAS para comparación insensible
+                            String nombreMayusculas = nombre.toUpperCase();
+                            mapaUidANombre.put(uid, nombreMayusculas);
+                            mapaNombreAUid.put(nombreMayusculas, uid);
+                            Log.d("ASISTENCIA", "  ✅ Cargado: " + uid + " -> " + nombreMayusculas);
+                        }
+                    }
+                }
+
+                Log.d("ASISTENCIA", "📊 Total estudiantes cargados para " + gradoActual + ": " + mapaUidANombre.size());
+
+                // Mostrar todos los nombres cargados
+                Log.d("ASISTENCIA", "📋 Nombres cargados (MAYÚSCULAS):");
+                for (String key : mapaNombreAUid.keySet()) {
+                    Log.d("ASISTENCIA", "   📌 " + key + " -> " + mapaNombreAUid.get(key));
+                }
+
+                requireActivity().runOnUiThread(() -> {
+                    if (mapaUidANombre.isEmpty()) {
+                        textViewStatus.setText("⚠️ No hay estudiantes en " + gradoActual);
+                        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark));
+                    } else {
+                        textViewStatus.setText("✅ " + mapaUidANombre.size() + " estudiantes cargados");
+                        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+                    }
+                });
+
+                // Restaurar estado inicial después de 2 segundos
+                new android.os.Handler().postDelayed(() -> {
+                    if (editTextNameSearch.getText().toString().trim().isEmpty()) {
+                        resetStatus();
+                    }
+                }, 2000);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("ASISTENCIA", "❌ Error al cargar nombres: " + error.getMessage());
+                nombresCargados = false;
+
+                requireActivity().runOnUiThread(() -> {
+                    textViewStatus.setText("❌ Error al cargar datos");
+                    textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
+                });
+            }
+        });
     }
 
-    /**
-     * Busca un estudiante por nombre completo.
-     */
+    // ============================================================
+    // CONVERTIR NOMBRE A UID (INSENSIBLE A MAYÚSCULAS/MINÚSCULAS)
+    // ============================================================
+    private String convertirNombreAUid(String nombre) {
+        Log.d("ASISTENCIA", "🔄 CONVIRTIENDO: " + nombre + " a UID");
+        Log.d("ASISTENCIA", "   📊 nombresCargados: " + nombresCargados);
+        Log.d("ASISTENCIA", "   📊 mapaNombreAUid.size(): " + mapaNombreAUid.size());
+
+        // Si los nombres no están cargados, intentar cargarlos primero
+        if (!nombresCargados || mapaNombreAUid.isEmpty()) {
+            Log.d("ASISTENCIA", "⏳ Nombres no cargados aún, intentando cargar...");
+            cargarNombresEstudiantes();
+            return null;
+        }
+
+        // ✅ Convertir el nombre ingresado a MAYÚSCULAS para comparar
+        String nombreUpper = nombre.trim().toUpperCase();
+        Log.d("ASISTENCIA", "   🔑 Buscando (MAYÚSCULAS): " + nombreUpper);
+
+        // Buscar en el mapa (todas las claves están en mayúsculas)
+        if (mapaNombreAUid.containsKey(nombreUpper)) {
+            String uid = mapaNombreAUid.get(nombreUpper);
+            Log.d("ASISTENCIA", "   ✅ ENCONTRADO EXACTO: " + nombreUpper + " -> " + uid);
+            return uid;
+        }
+
+        // Si no encuentra exacto, buscar por coincidencia parcial
+        Log.d("ASISTENCIA", "   ❌ No encontrado exacto, buscando sugerencias...");
+        String mejorCoincidencia = null;
+        int minDiferencia = Integer.MAX_VALUE;
+
+        for (String key : mapaNombreAUid.keySet()) {
+            int distancia = calcularDistancia(key, nombreUpper);
+            Log.d("ASISTENCIA", "      " + key + " vs " + nombreUpper + " = " + distancia);
+            if (distancia < minDiferencia && distancia < 5) {
+                minDiferencia = distancia;
+                mejorCoincidencia = key;
+            }
+        }
+
+        if (mejorCoincidencia != null) {
+            Log.d("ASISTENCIA", "   💡 SUGERENCIA: " + mejorCoincidencia + " -> " + mapaNombreAUid.get(mejorCoincidencia));
+            return mapaNombreAUid.get(mejorCoincidencia);
+        }
+
+        Log.d("ASISTENCIA", "   ❌ No se encontró coincidencia para: " + nombreUpper);
+        return null;
+    }
+
+    // ============================================================
+    // BUSCAR ESTUDIANTE
+    // ============================================================
     private void buscarEstudiante(String nombreCompleto) {
-        String claveBusqueda = convertirClaveFirebase(nombreCompleto);
-
-        // 🔍 LOGS PARA DEPURAR
         Log.d("ASISTENCIA", "========================================");
-        Log.d("ASISTENCIA", "📝 Nombre ingresado: " + nombreCompleto);
-        Log.d("ASISTENCIA", "🔑 Clave convertida: " + claveBusqueda);
-        Log.d("ASISTENCIA", "📅 Fecha actual: " + currentDate);
-        Log.d("ASISTENCIA", "📂 Ruta Firebase: asistencias/" + currentDate);
+        Log.d("ASISTENCIA", "🔍 1. Nombre ingresado: " + nombreCompleto);
+        Log.d("ASISTENCIA", "📊 mapaNombreAUid tiene: " + mapaNombreAUid.size() + " elementos");
+        Log.d("ASISTENCIA", "📊 mapaUidANombre tiene: " + mapaUidANombre.size() + " elementos");
         Log.d("ASISTENCIA", "========================================");
 
-        DatabaseReference dayRef = databaseReference.child(currentDate);
+        // Verificar si los nombres están cargados
+        if (!nombresCargados || mapaUidANombre.isEmpty()) {
+            Log.d("ASISTENCIA", "⏳ Nombres no cargados, cargando...");
+            textViewStatus.setText("⏳ Cargando lista de estudiantes...");
+            textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark));
+            cargarNombresEstudiantes();
+            // Esperar un poco y reintentar
+            new android.os.Handler().postDelayed(() -> {
+                buscarEstudiante(nombreCompleto);
+            }, 1000);
+            return;
+        }
 
         // Mostrar mensaje de búsqueda
         textViewStatus.setText("🔍 Buscando...");
         textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark));
 
+        // Convertir nombre a UID (insensible a mayúsculas/minúsculas)
+        String uid = convertirNombreAUid(nombreCompleto);
+        Log.d("ASISTENCIA", "🔑 2. UID encontrado: " + uid);
+
+        if (uid == null) {
+            Log.d("ASISTENCIA", "❌ 3. No se encontró UID para: " + nombreCompleto);
+            actualizarUI(false, null, null);
+            return;
+        }
+
+        // Buscar en asistencias/[fecha]/[grado]/[uid]
+        DatabaseReference dayRef = databaseReference
+                .child("asistencias")
+                .child(currentDate)
+                .child(gradoActual)
+                .child(uid);
+
+        Log.d("ASISTENCIA", "📂 3. Ruta: asistencias/" + currentDate + "/" + gradoActual + "/" + uid);
+
         dayRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                Log.d("ASISTENCIA", "📊 Snapshot existe: " + snapshot.exists());
-                Log.d("ASISTENCIA", "📊 Total estudiantes: " + snapshot.getChildrenCount());
+                Log.d("ASISTENCIA", "📊 4. Snapshot existe: " + snapshot.exists());
 
                 if (snapshot.exists()) {
-                    // Mostrar todos los nombres disponibles
-                    Log.d("ASISTENCIA", "📋 Nombres en Firebase:");
-                    for (DataSnapshot child : snapshot.getChildren()) {
-                        Log.d("ASISTENCIA", "   - " + child.getKey() + " = " + child.getValue());
-                    }
-
-                    boolean encontrado = false;
-                    String nombreEncontrado = null;
-                    Boolean presente = null;
-
-                    for (DataSnapshot child : snapshot.getChildren()) {
-                        String key = child.getKey();
-                        if (key != null) {
-                            Log.d("ASISTENCIA", "🔍 Comparando: '" + key + "' vs '" + claveBusqueda + "'");
-                            if (key.equalsIgnoreCase(claveBusqueda)) {
-                                encontrado = true;
-                                nombreEncontrado = key;
-                                if (child.getValue() instanceof Boolean) {
-                                    presente = child.getValue(Boolean.class);
-                                }
-                                Log.d("ASISTENCIA", "✅ ¡ENCONTRADO! " + key + " = " + presente);
-                                break;
-                            }
-                        }
-                    }
-
-                    if (encontrado) {
-                        String nombreFormateado = nombreEncontrado.replace("_", " ");
-                        actualizarUI(true, presente, nombreFormateado);
-                    } else {
-                        Log.d("ASISTENCIA", "❌ No encontrado exacto, buscando sugerencias...");
-                        buscarSugerencia(claveBusqueda, snapshot);
-                    }
+                    Boolean presente = snapshot.getValue(Boolean.class);
+                    Log.d("ASISTENCIA", "✅ 5. Resultado: " + presente);
+                    String nombreEstudiante = mapaUidANombre.getOrDefault(uid, nombreCompleto);
+                    actualizarUI(true, presente, nombreEstudiante);
                 } else {
-                    Log.d("ASISTENCIA", "❌ No hay datos para la fecha: " + currentDate);
+                    Log.d("ASISTENCIA", "❌ 5. No hay datos para: " + uid + " en " + currentDate);
                     actualizarUI(false, null, null);
                 }
             }
@@ -191,66 +309,14 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    /**
-     * Busca sugerencias similares cuando no encuentra exacto.
-     */
-    private void buscarSugerencia(String claveBusqueda, DataSnapshot snapshot) {
-        String nombreEncontrado = null;
-        Boolean presente = null;
-        int minDiferencia = Integer.MAX_VALUE;
-
-        for (DataSnapshot child : snapshot.getChildren()) {
-            String key = child.getKey();
-            if (key != null) {
-                String keyUpper = key.toUpperCase();
-                int distancia = calcularDistancia(keyUpper, claveBusqueda);
-                Log.d("ASISTENCIA", "   Distancia '" + key + "' = " + distancia);
-                if (distancia < minDiferencia && distancia < 5) {
-                    minDiferencia = distancia;
-                    nombreEncontrado = key;
-                    if (child.getValue() instanceof Boolean) {
-                        presente = child.getValue(Boolean.class);
-                    }
-                }
-            }
-        }
-
-        if (nombreEncontrado != null) {
-            Log.d("ASISTENCIA", "💡 Sugerencia: " + nombreEncontrado);
-            String nombreFormateado = nombreEncontrado.replace("_", " ");
-            actualizarUI(true, presente, nombreFormateado + " (Presente)");
-        } else {
-            Log.d("ASISTENCIA", "❌ No hay sugerencias");
-            actualizarUI(false, null, null);
-        }
-    }
-
-    /**
-     * Calcula distancia de Levenshtein.
-     */
-    private int calcularDistancia(String s1, String s2) {
-        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
-        for (int i = 0; i <= s1.length(); i++) {
-            dp[i][0] = i;
-        }
-        for (int j = 0; j <= s2.length(); j++) {
-            dp[0][j] = j;
-        }
-        for (int i = 1; i <= s1.length(); i++) {
-            for (int j = 1; j <= s2.length(); j++) {
-                int cost = s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1;
-                dp[i][j] = Math.min(Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
-            }
-        }
-        return dp[s1.length()][s2.length()];
-    }
-
-    /**
-     * Actualiza la UI con el resultado.
-     */
+    // ============================================================
+    // ACTUALIZAR UI
+    // ============================================================
     private void actualizarUI(boolean encontrado, Boolean presente, String nombre) {
         if (encontrado) {
-            textViewStudentName.setText("👤 " + nombre);
+            // Mostrar el nombre con formato original (con espacios)
+            String nombreMostrar = nombre.replace("_", " ");
+            textViewStudentName.setText("👤 " + nombreMostrar);
             textViewStudentName.setVisibility(View.VISIBLE);
 
             if (presente != null && presente) {
@@ -258,8 +324,8 @@ public class HomeFragment extends Fragment {
                 statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
                 textViewStatus.setText("✅ PRESENTE");
                 textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
-                textViewEntryTime.setText("Hora de ingreso no encontrada en la base de datos.");
-                textViewExitTime.setText("Hola de salida no encontrada en la base de datos.");
+                textViewEntryTime.setText("Hora de ingreso no encontrada");
+                textViewExitTime.setText("Hora de salida no encontrada");
 
             } else if (presente != null && !presente) {
                 // ❌ AUSENTE - Rojo
@@ -287,9 +353,9 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    /**
-     * Estado inicial.
-     */
+    // ============================================================
+    // ESTADO INICIAL
+    // ============================================================
     private void resetStatus() {
         statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
         textViewStatus.setText("🔍 Busca a tu hijo");
@@ -297,6 +363,26 @@ public class HomeFragment extends Fragment {
         textViewStudentName.setVisibility(View.GONE);
         textViewEntryTime.setText("--:--:--");
         textViewExitTime.setText("--:--:--");
+    }
+
+    // ============================================================
+    // CALCULAR DISTANCIA DE LEVENSHTEIN
+    // ============================================================
+    private int calcularDistancia(String s1, String s2) {
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+        for (int i = 0; i <= s1.length(); i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= s2.length(); j++) {
+            dp[0][j] = j;
+        }
+        for (int i = 1; i <= s1.length(); i++) {
+            for (int j = 1; j <= s2.length(); j++) {
+                int cost = s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1;
+                dp[i][j] = Math.min(Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
+            }
+        }
+        return dp[s1.length()][s2.length()];
     }
 
     @Override
