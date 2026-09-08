@@ -199,17 +199,27 @@ public class ProfeActivity extends AppCompatActivity {
     }
 
     private void abrirDetalleCurso(Curso curso) {
-        // Verificar qué curso se seleccionó
+
         if (curso.getNombre().contains("Primero")) {
-            Intent intent = new Intent(ProfeActivity.this, PrimeroSegundaria.class);
+
+            Intent intent = new Intent(
+                    ProfeActivity.this,
+                    MateriasPrimero.class
+            );
+
             intent.putExtra("curso_nombre", curso.getNombre());
             intent.putExtra("curso_color", curso.getColorResId());
             intent.putExtra("curso_estudiantes", curso.getCantidadEstudiantes());
+
             startActivity(intent);
-        }
-        // Aquí puedes agregar más condiciones para otros cursos
-        else {
-            Toast.makeText(this, "Abriendo: " + curso.getNombre(), Toast.LENGTH_SHORT).show();
+
+        } else {
+            Toast.makeText(
+                    this,
+                    "Abriendo: " + curso.getNombre(),
+                    Toast.LENGTH_SHORT
+            ).show();
         }
     }
+
 }

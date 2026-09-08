@@ -14,11 +14,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Colegio">
         <activity
-            android:name=".ui.PrimeroSegundaria"
+            android:name=".ui.MateriasPrimero"
             android:exported="false" />
         <!-- Actividades de cursos -->
         <activity
-            android:name=".ui.PrimeroActivity"
+            android:name=".ui.PrimeroTrimestreUno"
             android:exported="false"
             android:label="Primero de Secundaria" />
         <activity
@@ -38,6 +38,22 @@
             android:name=".MainActivity"
             android:exported="false"
             android:label="Colegio App" />
+        <activity
+            android:name=".ui.matematicaVerTrimestresPrimeroA"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.PrimeroTrimestreDos"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.PrimeroTrimestreTres"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.Centralizador"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

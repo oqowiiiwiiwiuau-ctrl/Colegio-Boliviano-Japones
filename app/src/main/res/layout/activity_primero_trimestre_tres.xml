@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <!-- Encabezado -->
+    <LinearLayout
+        android:id="@+id/headerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#2196F3"
+        android:padding="12dp"
+        android:elevation="8dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvTituloCurso"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Primero C - Matemáticas (Trimestre 3)"
+            android:textSize="14sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:layout_marginStart="12dp" />
+
+        <Button
+            android:id="@+id/btnGuardar"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="💾 GUARDAR"
+            android:background="@android:color/white"
+            android:textColor="#2196F3"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:elevation="4dp" />
+
+    </LinearLayout>
+
+    <!-- Contenedor principal -->
+    <LinearLayout
+        android:id="@+id/contenedorPrincipal"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <!-- TABLA FIJA -->
+        <ScrollView
+            android:id="@+id/scrollFijaVertical"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"
+            android:background="@android:color/white">
+
+            <TableLayout
+                android:id="@+id/tablaFija"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:stretchColumns="false" />
+        </ScrollView>
+
+        <!-- TABLA DE NOTAS -->
+        <HorizontalScrollView
+            android:id="@+id/scrollHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:scrollbars="horizontal|vertical"
+            android:background="@android:color/white">
+
+            <ScrollView
+                android:id="@+id/scrollVertical"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical">
+
+                <TableLayout
+                    android:id="@+id/tablaNotas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:stretchColumns="false" />
+            </ScrollView>
+        </HorizontalScrollView>
+    </LinearLayout>
+
+</LinearLayout>

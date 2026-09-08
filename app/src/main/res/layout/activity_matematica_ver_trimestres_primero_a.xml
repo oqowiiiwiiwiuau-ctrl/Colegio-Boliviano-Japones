@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F5F7FA">
+
+  <LinearLayout
+      android:id="@+id/main"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="vertical"
+      android:padding="20dp">
+
+    <!-- Encabezado -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="MATEMÁTICAS"
+        android:textColor="#1E293B"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="20dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Primero de Secundaria - A"
+        android:textColor="#64748B"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="28dp" />
+
+    <!-- Primer trimestre -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardPrimerTrimestre"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="5dp"
+        app:cardBackgroundColor="#2563EB">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:orientation="horizontal"
+          android:gravity="center_vertical"
+          android:padding="20dp">
+
+        <TextView
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:gravity="center"
+            android:text="1"
+            android:textColor="#2563EB"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:background="@drawable/circulo_blanco" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp">
+
+          <TextView
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Primer Trimestre"
+              android:textColor="#FFFFFF"
+              android:textSize="19sp"
+              android:textStyle="bold" />
+
+          <TextView
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Ver contenidos"
+              android:textColor="#DBEAFE"
+              android:textSize="14sp"
+              android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="›"
+            android:textColor="#FFFFFF"
+            android:textSize="38sp" />
+
+      </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Segundo trimestre -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardSegundoTrimestre"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="5dp"
+        app:cardBackgroundColor="#059669">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:orientation="horizontal"
+          android:gravity="center_vertical"
+          android:padding="20dp">
+
+        <TextView
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:gravity="center"
+            android:text="2"
+            android:textColor="#059669"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:background="@drawable/circulo_blanco" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp">
+
+          <TextView
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Segundo Trimestre"
+              android:textColor="#FFFFFF"
+              android:textSize="19sp"
+              android:textStyle="bold" />
+
+          <TextView
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Ver contenidos"
+              android:textColor="#D1FAE5"
+              android:textSize="14sp"
+              android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="›"
+            android:textColor="#FFFFFF"
+            android:textSize="38sp" />
+
+      </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Tercer trimestre -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardTercerTrimestre"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="5dp"
+        app:cardBackgroundColor="#D97706">
+
+      <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:orientation="horizontal"
+          android:gravity="center_vertical"
+          android:padding="20dp">
+
+        <TextView
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:gravity="center"
+            android:text="3"
+            android:textColor="#D97706"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:background="@drawable/circulo_blanco" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp">
+
+          <TextView
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Tercer Trimestre"
+              android:textColor="#FFFFFF"
+              android:textSize="19sp"
+              android:textStyle="bold" />
+
+          <TextView
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:text="Ver contenidos"
+              android:textColor="#FEF3C7"
+              android:textSize="14sp"
+              android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="›"
+            android:textColor="#FFFFFF"
+            android:textSize="38sp" />
+
+      </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+
+    <!-- ===================================================== -->
+    <!-- BOTÓN CENTRALIZADOR -->
+    <!-- ===================================================== -->
+
+    <Button
+        android:id="@+id/btnCentralizador"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="20dp"
+        android:text="CENTRALIZADOR"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:backgroundTint="#7C3AED"
+        android:elevation="5dp" />
+
+  </LinearLayout>
+</ScrollView>

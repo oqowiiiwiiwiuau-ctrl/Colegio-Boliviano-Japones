@@ -13,7 +13,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.graficar.colegio.R;
 
-public class PrimeroSegundaria extends AppCompatActivity {
+public class MateriasPrimero extends AppCompatActivity {
 
     CardView cardMatematica, cardLengua;
 
@@ -21,7 +21,7 @@ public class PrimeroSegundaria extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_primero_segundaria);
+        setContentView(R.layout.activity_materias_primero);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -35,8 +35,8 @@ public class PrimeroSegundaria extends AppCompatActivity {
         // 👉 Abrir Activity de Matemática
         cardMatematica.setOnClickListener(v -> {
             Intent intent = new Intent(
-                    PrimeroSegundaria.this,
-                    PrimeroActivity.class
+                    MateriasPrimero.this,
+                    matematicaVerTrimestresPrimeroA.class
             );
             startActivity(intent);
         });
