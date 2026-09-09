@@ -830,14 +830,27 @@ public class PrimeroTrimestreUno extends AppCompatActivity {
     // ============================================================
     private ViewGroup obtenerFilaNotas(View vista) {
         ViewParent parent = vista.getParent();
+
         while (parent != null) {
+
             if (parent == tablaNotas) {
-                return (ViewGroup) parent;
+                return null;
             }
+
+            if (parent instanceof ViewGroup) {
+                ViewGroup grupo = (ViewGroup) parent;
+
+                if (grupo.getParent() == tablaNotas) {
+                    return grupo;
+                }
+            }
+
             parent = parent.getParent();
         }
+
         return null;
     }
+
     // ============================================================
     // EDIT TEXT: NOTA DIRECTA (columnas fijas + padres sin hijas)
     // ============================================================
