@@ -59,11 +59,13 @@
             android:scrollbars="vertical"
             android:background="@android:color/white">
 
-            <TableLayout
+            <!-- ANTES: TableLayout -> AHORA: LinearLayout vertical
+                 (las filas se crean en código con celdas de ancho explícito) -->
+            <LinearLayout
                 android:id="@+id/tablaFija"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:stretchColumns="false" />
+                android:orientation="vertical" />
         </ScrollView>
 
         <!-- TABLA DE NOTAS -->
@@ -81,11 +83,13 @@
                 android:layout_height="match_parent"
                 android:scrollbars="vertical">
 
-                <TableLayout
+                <!-- ANTES: TableLayout -> AHORA: LinearLayout vertical
+                     (las filas se crean en código con celdas de ancho explícito) -->
+                <LinearLayout
                     android:id="@+id/tablaNotas"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:stretchColumns="false" />
+                    android:orientation="vertical" />
             </ScrollView>
         </HorizontalScrollView>
     </LinearLayout>
