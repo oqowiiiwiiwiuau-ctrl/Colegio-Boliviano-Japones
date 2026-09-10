@@ -55,6 +55,20 @@ public class PrimeroTrimestreUno extends AppCompatActivity {
     private ScrollView scrollFijaVertical;
     private TextView tvTituloCurso;
     private Button btnGuardar;
+    //Constante para cambio de promedios
+    // ============================================================
+    // ESCALAS DE SER / SABER / HACER
+    // Puedes modificar estos valores cuando quieras.
+    // ============================================================
+
+    private static final double MAX_SER = 5.0;
+    private static final double MAX_SABER = 45.0;
+    private static final double MAX_HACER = 45.0;
+    private static final double MAX_AUTOEVALUACION = 5.0;
+    private static final double MAX_PONDERACION = 10.0;
+    private static final double MAX_NOTA_FINAL = 100.0;
+    //Calificaciones
+    private static final double MAX_CALIFICACION_HIJA = 10.0;
 
     // ============================================================
     // DATOS
@@ -102,13 +116,13 @@ public class PrimeroTrimestreUno extends AppCompatActivity {
 
     private void inicializarColumnas() {
         columnas.clear();
-        columnas.add(new ColumnaConfig("PROMEDIO", "promedio", false));
         columnas.add(new ColumnaConfig("TOTAL", "total", false));
         columnas.add(new ColumnaConfig("AUTOEV.", "autoevaluacion", true));
         columnas.add(new ColumnaConfig("NOTA PARCIAL", "nota parcial", false));
         columnas.add(new ColumnaConfig("PONDERACIÓN", "ponderacion", true));
         columnas.add(new ColumnaConfig("NOTA TRIMESTRAL", "nota trimestral", false));
     }
+
 
     // ============================================================
     // COLUMNAS PADRE DINÁMICAS: SER, SABER, HACER
@@ -160,7 +174,7 @@ public class PrimeroTrimestreUno extends AppCompatActivity {
             this.nombre = nombre;
             this.uid = uid;
             String[] claves = {
-                    "ser", "saber", "hacer", "promedio", "total",
+                    "ser", "saber", "hacer", "total",
                     "autoevaluacion", "nota parcial", "ponderacion", "nota trimestral"
             };
             for (String clave : claves) {
@@ -887,8 +901,8 @@ public class PrimeroTrimestreUno extends AppCompatActivity {
                 if (clave.equals("autoevaluacion") && !nuevoValor.equals("--")) {
                     try {
                         double valorAuto = Double.parseDouble(nuevoValor);
-                        if (valorAuto > 5) {
-                            nuevoValor = "5";
+                        if (valorAuto > MAX_AUTOEVALUACION) {
+                            nuevoValor = formatear(MAX_AUTOEVALUACION);
                             modificando = true;
                             editText.setText("5");
                             editText.setSelection(editText.length());
@@ -911,8 +925,8 @@ public class PrimeroTrimestreUno extends AppCompatActivity {
                 if (clave.equals("ponderacion") && !nuevoValor.equals("--")) {
                     try {
                         double valorPond = Double.parseDouble(nuevoValor);
-                        if (valorPond > 10) {
-                            nuevoValor = "10";
+                        if (valorPond > MAX_PONDERACION) {
+                            nuevoValor = formatear(MAX_PONDERACION);
                             modificando = true;
                             editText.setText("10");
                             editText.setSelection(editText.length());
@@ -1096,9 +1110,54 @@ public class PrimeroTrimestreUno extends AppCompatActivity {
     }
 
     private void recalcularNotaPadre(Estudiante estudiante, ColumnaPadreEditable padre) {
+
         double promedio = calcularPromedioPadre(estudiante, padre);
-        estudiante.setNota(padre.id, promedio >= 0 ? formatear(promedio) : "--");
+
+        if (promedio < 0) {
+            estudiante.setNota(padre.id, "--");
+            return;
+        }
+
+        double maximo;
+
+        switch (padre.id) {
+            case "ser":
+                maximo = MAX_SER;
+                break;
+
+            case "saber":
+                maximo = MAX_SABER;
+                break;
+
+            case "hacer":
+                maximo = MAX_HACER;
+                break;
+
+            default:
+                maximo = 100.0;
+                break;
+        }
+
+        /*
+         * El promedio de las subcolumnas se supone que
+         * está expresado sobre 100.
+         *
+         * Ejemplo:
+         * promedio = 80
+         * SABER máximo = 45
+         *
+         * 80 / 100 * 45 = 36
+         */
+
+        double notaPonderada = (promedio / MAX_CALIFICACION_HIJA) * maximo;
+
+        if (notaPonderada > maximo) {
+            notaPonderada = maximo;
+        }
+
+        estudiante.setNota(padre.id, formatear(notaPonderada));
     }
+
 
     // ============================================================
     // GUARDAR TODOS LOS CAMPOS CALCULADOS EN FIREBASE (inmediato)
@@ -1114,10 +1173,6 @@ public class PrimeroTrimestreUno extends AppCompatActivity {
             }
         }
 
-        String promedio = estudiante.getNota("promedio");
-        if (!promedio.equals("--")) {
-            guardarNotaEnFirebase(estudiante.getUid(), "promedio", promedio);
-        }
 
         String total = estudiante.getNota("total");
         if (!total.equals("--")) {
@@ -1221,48 +1276,105 @@ public class PrimeroTrimestreUno extends AppCompatActivity {
     // ============================================================
 
     private void calcularNotas(Estudiante estudiante) {
+
         double ser = estudiante.getNotaValor("ser");
         double saber = estudiante.getNotaValor("saber");
         double hacer = estudiante.getNotaValor("hacer");
-        double autoevaluacion = estudiante.getNotaValor("autoevaluacion");
+
+        // ========================================================
+        // TOTAL = SER + SABER + HACER
+        // Máximo: 5 + 45 + 45 = 95
+        // ========================================================
 
         if (ser >= 0 && saber >= 0 && hacer >= 0) {
-            double promedio = (ser + saber + hacer) / 3.0;
-            estudiante.setNota("promedio", formatear(promedio));
 
-            double total = (promedio / 100.0) * 95.0;
+            double total = ser + saber + hacer;
+
+            double maximoTotal = MAX_SER + MAX_SABER + MAX_HACER;
+
+            if (total > maximoTotal) {
+                total = maximoTotal;
+            }
+
             estudiante.setNota("total", formatear(total));
+
         } else {
-            estudiante.setNota("promedio", "--");
             estudiante.setNota("total", "--");
         }
 
+        // ========================================================
+        // AUTOEVALUACIÓN
+        // Máximo: 5
+        // ========================================================
+
+        double autoevaluacion = estudiante.getNotaValor("autoevaluacion");
+
+        if (autoevaluacion < 0) {
+            autoevaluacion = 0;
+        }
+
+        if (autoevaluacion > MAX_AUTOEVALUACION) {
+            autoevaluacion = MAX_AUTOEVALUACION;
+        }
+
+        // ========================================================
+        // NOTA PARCIAL
+        // TOTAL /95 + AUTOEVALUACIÓN /5 = /100
+        // ========================================================
+
         double total = estudiante.getNotaValor("total");
-        if (autoevaluacion < 0) autoevaluacion = 0;
-        if (autoevaluacion > 5) autoevaluacion = 5;
 
         if (total >= 0) {
+
             double notaParcial = total + autoevaluacion;
+
+            if (notaParcial > MAX_NOTA_FINAL) {
+                notaParcial = MAX_NOTA_FINAL;
+            }
+
             estudiante.setNota("nota parcial", formatear(notaParcial));
+
         } else {
             estudiante.setNota("nota parcial", "--");
         }
 
+        // ========================================================
+        // PONDERACIÓN
+        // ========================================================
+
         double notaParcial = estudiante.getNotaValor("nota parcial");
         double ponderacion = estudiante.getNotaValor("ponderacion");
 
-        if (notaParcial >= 0 && ponderacion >= 0) {
-            if (ponderacion < 0) ponderacion = 0;
-            if (ponderacion > 10) ponderacion = 10;
+        if (ponderacion < 0) {
+            ponderacion = 0;
+        }
+
+        if (ponderacion > MAX_PONDERACION) {
+            ponderacion = MAX_PONDERACION;
+        }
+
+        // ========================================================
+        // NOTA TRIMESTRAL
+        // ========================================================
+
+        if (notaParcial >= 0) {
 
             double notaTrimestral = notaParcial + ponderacion;
-            if (notaTrimestral > 100) notaTrimestral = 100;
 
-            estudiante.setNota("nota trimestral", String.format(Locale.US, "%.1f", notaTrimestral));
+            if (notaTrimestral > MAX_NOTA_FINAL) {
+                notaTrimestral = MAX_NOTA_FINAL;
+            }
+
+            estudiante.setNota(
+                    "nota trimestral",
+                    formatear(notaTrimestral)
+            );
+
         } else {
             estudiante.setNota("nota trimestral", "--");
         }
     }
+
 
     // ============================================================
     // FORMATO DECIMAL

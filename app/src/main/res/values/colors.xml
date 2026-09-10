@@ -38,6 +38,19 @@
     <color name="gris_claro">#ECF0F1</color>
     <color name="gris_medio">#BDC3C7</color>
 
+    <!-- Colores similares a la aplicacion notion-->
+    <color name="notion_fondo">#F7F7F5</color>
+    <color name="notion_blanco">#FFFFFF</color>
+    <color name="notion_borde">#E6E6E3</color>
+    <color name="notion_texto">#37352F</color>
+
+    <color name="notion_ser">#F3E8FF</color>
+    <color name="notion_saber">#E8F0FE</color>
+    <color name="notion_hacer">#E8F5E9</color>
+
+    <color name="notion_ser_texto">#7C3AED</color>
+    <color name="notion_saber_texto">#2563EB</color>
+    <color name="notion_hacer_texto">#16A34A</color>
 
 
 </resources>

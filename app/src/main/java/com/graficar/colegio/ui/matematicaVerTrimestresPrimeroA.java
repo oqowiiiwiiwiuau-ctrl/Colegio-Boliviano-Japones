@@ -22,21 +22,19 @@ public class matematicaVerTrimestresPrimeroA extends AppCompatActivity {
                 R.layout.activity_matematica_ver_trimestres_primero_a
         );
 
+        // Aplicamos insets al contenedor raíz (LinearLayout principal)
         ViewCompat.setOnApplyWindowInsetsListener(
-                findViewById(R.id.main),
+                findViewById(R.id.headerContainer).getRootView(),
                 (v, insets) -> {
-
                     Insets systemBars = insets.getInsets(
                             WindowInsetsCompat.Type.systemBars()
                     );
-
                     v.setPadding(
                             systemBars.left,
                             systemBars.top,
                             systemBars.right,
                             systemBars.bottom
                     );
-
                     return insets;
                 }
         );
@@ -44,47 +42,36 @@ public class matematicaVerTrimestresPrimeroA extends AppCompatActivity {
         // =====================================================
         // PRIMER TRIMESTRE
         // =====================================================
-
         findViewById(R.id.cardPrimerTrimestre)
                 .setOnClickListener(v -> {
-
                     Intent intent = new Intent(
                             matematicaVerTrimestresPrimeroA.this,
                             PrimeroTrimestreUno.class
                     );
-
                     startActivity(intent);
                 });
-
 
         // =====================================================
         // SEGUNDO TRIMESTRE
         // =====================================================
-
         findViewById(R.id.cardSegundoTrimestre)
                 .setOnClickListener(v -> {
-
                     Intent intent = new Intent(
                             matematicaVerTrimestresPrimeroA.this,
                             PrimeroTrimestreDos.class
                     );
-
                     startActivity(intent);
                 });
-
 
         // =====================================================
         // TERCER TRIMESTRE
         // =====================================================
-
         findViewById(R.id.cardTercerTrimestre)
                 .setOnClickListener(v -> {
-
                     Intent intent = new Intent(
                             matematicaVerTrimestresPrimeroA.this,
                             PrimeroTrimestreTres.class
                     );
-
                     startActivity(intent);
                 });
 
@@ -100,5 +87,4 @@ public class matematicaVerTrimestresPrimeroA extends AppCompatActivity {
                     startActivity(intent);
                 });
     }
-
 }
