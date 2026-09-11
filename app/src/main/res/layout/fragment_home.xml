@@ -1,263 +1,435 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+
+    android:fillViewport="true"
     android:background="#F5F7FA"
-    android:padding="20dp"
+
     tools:context=".ui.home.HomeFragment">
 
-    <!-- ============================================================
-    ENCABEZADO
-    ============================================================ -->
-    <TextView
-        android:id="@+id/textViewHeader"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="📋 Control de Asistencia"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#1A2332"
-        android:fontFamily="sans-serif-medium"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp" />
 
-    <TextView
-        android:id="@+id/textViewSubHeader"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Consulta el estado de tu hijo en el colegio"
-        android:textSize="14sp"
-        android:textColor="#6B7A8F"
-        app:layout_constraintTop_toBottomOf="@id/textViewHeader"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="4dp" />
+    <androidx.constraintlayout.widget.ConstraintLayout
 
-    <!-- ============================================================
-    FECHA
-    ============================================================ -->
-    <TextView
-        android:id="@+id/textViewDate"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="📅 Cargando..."
-        android:textSize="14sp"
-        android:textColor="#6B7A8F"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/textViewSubHeader"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp" />
 
-    <!-- ============================================================
-    TARJETA DE BÚSQUEDA
-    ============================================================ -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cardSearch"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@id/textViewSubHeader"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:padding="20dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+
+        <!-- ========================================================
+             ENCABEZADO
+             ======================================================== -->
+
+        <TextView
+            android:id="@+id/textViewHeader"
+
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
 
-            <!-- Título de la tarjeta -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔍 Buscar estudiante"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="#1A2332"
-                android:layout_marginBottom="12dp" />
+            android:text="📋 Control de Asistencia"
 
-            <!-- Campo de búsqueda -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/textInputLayout"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#1A2332"
+            android:fontFamily="sans-serif-medium"
+
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+
+            android:layout_marginTop="8dp" />
+
+
+        <!-- ========================================================
+             SUBTÍTULO
+             ======================================================== -->
+
+        <TextView
+            android:id="@+id/textViewSubHeader"
+
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+
+            android:text="Consulta el estado de tu hijo en el colegio"
+
+            android:textSize="14sp"
+            android:textColor="#6B7A8F"
+
+            app:layout_constraintTop_toBottomOf="@id/textViewHeader"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+
+            android:layout_marginTop="4dp" />
+
+
+        <!-- ========================================================
+             FECHA
+             ======================================================== -->
+
+        <TextView
+            android:id="@+id/textViewDate"
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:text="📅 2026-08-20"
+
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#6B7A8F"
+
+            android:visibility="visible"
+
+            app:layout_constraintTop_toBottomOf="@id/textViewSubHeader"
+            app:layout_constraintStart_toStartOf="parent"
+
+            android:layout_marginTop="16dp" />
+
+
+        <!-- ========================================================
+             TARJETA DE BÚSQUEDA
+             ======================================================== -->
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardSearch"
+
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+
+            android:layout_marginTop="16dp"
+
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#FFFFFF"
+
+            app:layout_constraintTop_toBottomOf="@id/textViewDate"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+
+            <LinearLayout
+
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:hint="Nombre completo del estudiante"
-                app:boxStrokeColor="#2196F3"
-                app:hintTextColor="#2196F3">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editTextNameSearch"
+                android:orientation="vertical"
+
+                android:padding="16dp">
+
+
+                <!-- TÍTULO -->
+
+                <TextView
+
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+
+                    android:text="🔍 Buscar estudiante"
+
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A2332"
+
+                    android:layout_marginBottom="12dp" />
+
+
+                <!-- CAMPO -->
+
+                <com.google.android.material.textfield.TextInputLayout
+
+                    android:id="@+id/textInputLayout"
+
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="textPersonName"
-                    android:textSize="16sp"
-                    android:drawableStart="@drawable/outline_search_24"
-                    android:drawablePadding="12dp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp" />
 
-            </com.google.android.material.textfield.TextInputLayout>
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
 
-            <!-- Botón Buscar -->
-            <Button
-                android:id="@+id/btnBuscar"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="12dp"
-                android:text="🔍 BUSCAR"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#2196F3"
-                app:cornerRadius="12dp" />
+                    android:hint="Nombre completo del estudiante"
 
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+                    app:boxStrokeColor="#2196F3"
+                    app:hintTextColor="#2196F3">
 
-    <!-- ============================================================
-    TARJETA DE RESULTADO
-    ============================================================ -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cardResult"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@id/cardSearch"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+                    <com.google.android.material.textfield.TextInputEditText
+
+                        android:id="@+id/editTextNameSearch"
+
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+
+                        android:inputType="textPersonName"
+                        android:imeOptions="actionSearch"
+
+                        android:textSize="16sp"
+
+                        android:drawableStart="@drawable/outline_search_24"
+                        android:drawablePadding="12dp"
+
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+
+                <!-- BOTÓN -->
+
+                <Button
+
+                    android:id="@+id/btnBuscar"
+
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+
+                    android:layout_marginTop="12dp"
+
+                    android:text="🔍 BUSCAR"
+
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+
+                    android:backgroundTint="#2196F3"
+
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+
+        <!-- ========================================================
+             TARJETA DE RESULTADO
+             ======================================================== -->
+
+        <androidx.cardview.widget.CardView
+
+            android:id="@+id/cardResult"
+
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
 
-            <!-- Nombre del estudiante -->
-            <TextView
-                android:id="@+id/textViewStudentName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="👤 Nombre del estudiante"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="#1A2332"
-                android:visibility="gone"
-                android:layout_marginBottom="16dp" />
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp"
 
-            <!-- Estado e indicador -->
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#FFFFFF"
+
+            app:layout_constraintTop_toBottomOf="@id/cardSearch"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+
             <LinearLayout
+
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="16dp">
+
+                android:orientation="vertical"
+
+                android:padding="20dp">
+
+
+                <!-- =================================================
+                     NOMBRE DEL ESTUDIANTE
+                     ================================================= -->
+
+                <TextView
+
+                    android:id="@+id/textViewStudentName"
+
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:text="👤 Nombre del estudiante"
+
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A2332"
+
+                    android:visibility="gone"
+
+                    android:layout_marginBottom="16dp" />
+
+
+                <!-- =================================================
+                     ESTADO
+                     ================================================= -->
+
+                <LinearLayout
+
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+
+                    android:layout_marginBottom="16dp">
+
+
+                    <!-- INDICADOR -->
+
+                    <View
+
+                        android:id="@+id/statusIndicator"
+
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+
+                        android:background="@drawable/status_indicator_gray"
+
+                        android:layout_marginEnd="12dp" />
+
+
+                    <!-- ESTADO -->
+
+                    <TextView
+
+                        android:id="@+id/textViewStatus"
+
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+
+                        android:layout_weight="1"
+
+                        android:text="🔍 Busca a tu hijo"
+
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#1A2332" />
+
+                </LinearLayout>
+
+
+                <!-- =================================================
+                     DIVISOR
+                     ================================================= -->
 
                 <View
-                    android:id="@+id/statusIndicator"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:background="@drawable/status_indicator_gray"
-                    android:layout_marginEnd="12dp" />
 
-                <TextView
-                    android:id="@+id/textViewStatus"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+
+                    android:background="#E8ECF1"
+
+                    android:layout_marginVertical="12dp" />
+
+
+                <!-- =================================================
+                     ENTRADA
+                     ================================================= -->
+
+                <LinearLayout
+
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="🔍 Busca a tu hijo"
-                    android:textSize="18sp"
-                    android:textColor="#1A2332"
-                    android:textStyle="bold" />
+
+                    android:orientation="horizontal"
+
+                    android:layout_marginTop="4dp">
+
+
+                    <TextView
+
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+
+                        android:text="⏰ Entrada:"
+
+                        android:textSize="16sp"
+                        android:textColor="#6B7A8F"
+
+                        android:layout_marginEnd="12dp"
+
+                        android:minWidth="90dp" />
+
+
+                    <TextView
+
+                        android:id="@+id/textViewEntryTime"
+
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+
+                        android:layout_weight="1"
+
+                        android:text="--:--"
+
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#1A2332" />
+
+                </LinearLayout>
+
+
+                <!-- =================================================
+                     SALIDA
+                     ================================================= -->
+
+                <LinearLayout
+
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:orientation="horizontal"
+
+                    android:layout_marginTop="12dp">
+
+
+                    <TextView
+
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+
+                        android:text="⏰ Salida:"
+
+                        android:textSize="16sp"
+                        android:textColor="#6B7A8F"
+
+                        android:layout_marginEnd="12dp"
+
+                        android:minWidth="90dp" />
+
+
+                    <TextView
+
+                        android:id="@+id/textViewExitTime"
+
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+
+                        android:layout_weight="1"
+
+                        android:text="--:--"
+
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#1A2332" />
+
+                </LinearLayout>
+
+
+                <!-- =================================================
+                     ESPACIO FINAL
+                     ================================================= -->
+
+                <View
+
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp" />
+
             </LinearLayout>
 
-            <!-- Línea divisoria -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#E8ECF1"
-                android:layout_marginVertical="12dp" />
+        </androidx.cardview.widget.CardView>
 
-            <!-- Hora de entrada -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="4dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="⏰ Entrada:"
-                    android:textSize="16sp"
-                    android:textColor="#6B7A8F"
-                    android:layout_marginEnd="12dp"
-                    android:minWidth="90dp" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <TextView
-                    android:id="@+id/textViewEntryTime"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="--:--:--"
-                    android:textSize="16sp"
-                    android:textColor="#1A2332"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Hora de salida -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="⏰ Salida:"
-                    android:textSize="16sp"
-                    android:textColor="#6B7A8F"
-                    android:layout_marginEnd="12dp"
-                    android:minWidth="90dp" />
-
-                <TextView
-                    android:id="@+id/textViewExitTime"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="--:--:--"
-                    android:textSize="16sp"
-                    android:textColor="#1A2332"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- ============================================================
-    PIE DE PÁGINA
-    ============================================================ -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="ℹ️ Los datos se actualizan en tiempo real"
-        android:textSize="12sp"
-        android:textColor="#A0ADBF"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="16dp" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

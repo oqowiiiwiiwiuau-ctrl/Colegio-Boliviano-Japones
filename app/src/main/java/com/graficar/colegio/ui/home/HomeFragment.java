@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -23,8 +24,6 @@ import com.google.firebase.database.ValueEventListener;
 import com.graficar.colegio.R;
 import com.graficar.colegio.databinding.FragmentHomeBinding;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -32,362 +31,1028 @@ import java.util.Map;
 public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
+
+    // ============================================================
+    // VISTAS
+    // ============================================================
+
     private EditText editTextNameSearch;
     private TextView textViewStatus;
     private View statusIndicator;
     private TextView textViewEntryTime;
     private TextView textViewExitTime;
     private TextView textViewStudentName;
+    private TextView textViewDate;
     private Button btnBuscar;
 
-    // Firebase
+    // ============================================================
+    // FIREBASE
+    // ============================================================
+
     private DatabaseReference databaseReference;
 
-    // Fecha actual
-    private String currentDate;
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+    // ============================================================
+    // FECHA DE PRUEBA
+    // ============================================================
 
-    // Mapa para guardar UID -> Nombre (TODO EN MAYÚSCULAS)
-    private Map<String, String> mapaUidANombre = new HashMap<>();          // uid -> nombre (mayúsculas)
-    private Map<String, String> mapaNombreAUid = new HashMap<>();          // nombre (mayúsculas) -> uid
+    private String currentDate = "2026-08-20";
+
+    // ============================================================
+    // MAPAS
+    // ============================================================
+
+    // UID -> Nombre
+    private final Map<String, String> mapaUidANombre = new HashMap<>();
+
+    // Nombre en MAYÚSCULAS -> UID
+    private final Map<String, String> mapaNombreAUid = new HashMap<>();
+
     private boolean nombresCargados = false;
 
-    // Grado actual
-    private String gradoActual = "primeroC";
+    // ============================================================
+    // GRADO
+    // ============================================================
+
+    private final String gradoActual = "primeroC";
+
+    // ============================================================
+    // LOG
+    // ============================================================
+
+    private static final String TAG = "ASISTENCIA";
+
+
+    // ============================================================
+    // ON CREATE VIEW
+    // ============================================================
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            ViewGroup container,
+            Bundle savedInstanceState
+    ) {
 
-        binding = FragmentHomeBinding.inflate(inflater, container, false);
+        binding = FragmentHomeBinding.inflate(
+                inflater,
+                container,
+                false
+        );
+
         View root = binding.getRoot();
 
-        // Inicializar vistas
-        editTextNameSearch = root.findViewById(R.id.editTextNameSearch);
-        textViewStatus = root.findViewById(R.id.textViewStatus);
-        statusIndicator = root.findViewById(R.id.statusIndicator);
-        textViewEntryTime = root.findViewById(R.id.textViewEntryTime);
-        textViewExitTime = root.findViewById(R.id.textViewExitTime);
-        textViewStudentName = root.findViewById(R.id.textViewStudentName);
-        btnBuscar = root.findViewById(R.id.btnBuscar);
+        // ========================================================
+        // INICIALIZAR VISTAS
+        // ========================================================
 
-        // ============================================================
-        // 🔥 IMPORTANTE: Usar la fecha que tienes en Firebase
-        // ============================================================
-        // currentDate = dateFormat.format(new Date()); // ← COMENTADO
-        currentDate = "2026-08-20"; // ← FECHA DE TU FIREBASE
+        editTextNameSearch =
+                root.findViewById(R.id.editTextNameSearch);
 
-        // Actualizar fecha en UI
-        TextView tvDate = root.findViewById(R.id.textViewDate);
-        if (tvDate != null) {
-            tvDate.setText("📅 " + currentDate);
-        }
+        textViewStatus =
+                root.findViewById(R.id.textViewStatus);
 
-        // Inicializar Firebase
-        databaseReference = FirebaseDatabase.getInstance().getReference();
+        statusIndicator =
+                root.findViewById(R.id.statusIndicator);
 
-        // Cargar los nombres de los estudiantes
-        cargarNombresEstudiantes();
+        textViewEntryTime =
+                root.findViewById(R.id.textViewEntryTime);
 
-        // Botón de búsqueda
-        btnBuscar.setOnClickListener(v -> {
-            String query = editTextNameSearch.getText().toString().trim();
-            if (!query.isEmpty()) {
-                buscarEstudiante(query);
-            } else {
-                Toast.makeText(getContext(), "Ingresa el nombre de tu hijo", Toast.LENGTH_SHORT).show();
-            }
-        });
+        textViewExitTime =
+                root.findViewById(R.id.textViewExitTime);
 
-        // Buscar al presionar Enter
-        editTextNameSearch.setOnEditorActionListener((v, actionId, event) -> {
-            String query = editTextNameSearch.getText().toString().trim();
-            if (!query.isEmpty()) {
-                buscarEstudiante(query);
-                return true;
-            }
-            return false;
-        });
+        textViewStudentName =
+                root.findViewById(R.id.textViewStudentName);
+
+        textViewDate =
+                root.findViewById(R.id.textViewDate);
+
+        btnBuscar =
+                root.findViewById(R.id.btnBuscar);
+
+
+        // ========================================================
+        // FECHA
+        // ========================================================
+
+        textViewDate.setText("📅 " + currentDate);
+
+
+        // ========================================================
+        // FIREBASE
+        // ========================================================
+
+        databaseReference =
+                FirebaseDatabase
+                        .getInstance()
+                        .getReference();
+
+
+        // ========================================================
+        // ESTADO INICIAL
+        // ========================================================
 
         resetStatus();
+
+
+        // ========================================================
+        // CARGAR ESTUDIANTES
+        // ========================================================
+
+        cargarNombresEstudiantes();
+
+
+        // ========================================================
+        // BOTÓN BUSCAR
+        // ========================================================
+
+        btnBuscar.setOnClickListener(v -> {
+
+            String query =
+                    editTextNameSearch
+                            .getText()
+                            .toString()
+                            .trim();
+
+            if (!query.isEmpty()) {
+
+                buscarEstudiante(query);
+
+            } else {
+
+                Toast.makeText(
+                        getContext(),
+                        "Ingresa el nombre de tu hijo",
+                        Toast.LENGTH_SHORT
+                ).show();
+            }
+        });
+
+
+        // ========================================================
+        // TECLADO - ENTER / BUSCAR
+        // ========================================================
+
+        editTextNameSearch.setOnEditorActionListener(
+                (v, actionId, event) -> {
+
+                    if (actionId == EditorInfo.IME_ACTION_SEARCH
+                            || actionId == EditorInfo.IME_ACTION_DONE) {
+
+                        String query =
+                                editTextNameSearch
+                                        .getText()
+                                        .toString()
+                                        .trim();
+
+                        if (!query.isEmpty()) {
+
+                            buscarEstudiante(query);
+
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+        );
+
+
         return root;
     }
 
+
     // ============================================================
-    // CARGAR NOMBRES DE ESTUDIANTES (TODO EN MAYÚSCULAS)
+    // CARGAR NOMBRES DE ESTUDIANTES
     // ============================================================
+
     private void cargarNombresEstudiantes() {
-        Log.d("ASISTENCIA", "📥 CARGANDO NOMBRES DE ESTUDIANTES...");
 
-        textViewStatus.setText("🔄 Cargando lista de estudiantes...");
-        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark));
+        Log.d(
+                TAG,
+                "📥 Cargando estudiantes..."
+        );
 
-        databaseReference.child("estudiantes").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                mapaUidANombre.clear();
-                mapaNombreAUid.clear();
-                nombresCargados = true;
+        textViewStatus.setText(
+                "🔄 Cargando..."
+        );
 
-                Log.d("ASISTENCIA", "📊 Total estudiantes en Firebase: " + snapshot.getChildrenCount());
+        textViewStatus.setTextColor(
+                ContextCompat.getColor(
+                        requireContext(),
+                        android.R.color.holo_blue_dark
+                )
+        );
 
-                if (snapshot.exists()) {
-                    for (DataSnapshot child : snapshot.getChildren()) {
-                        String uid = child.getKey();
-                        String nombre = child.child("nombre").getValue(String.class);
-                        String grado = child.child("grado").getValue(String.class);
 
-                        Log.d("ASISTENCIA", "  🔍 UID: " + uid + ", Nombre: " + nombre + ", Grado: " + grado);
+        databaseReference
+                .child("estudiantes")
+                .addListenerForSingleValueEvent(
+                        new ValueEventListener() {
 
-                        if (nombre != null && !nombre.isEmpty() && grado != null && grado.equals(gradoActual)) {
-                            // ✅ Guardar TODO en MAYÚSCULAS para comparación insensible
-                            String nombreMayusculas = nombre.toUpperCase();
-                            mapaUidANombre.put(uid, nombreMayusculas);
-                            mapaNombreAUid.put(nombreMayusculas, uid);
-                            Log.d("ASISTENCIA", "  ✅ Cargado: " + uid + " -> " + nombreMayusculas);
+                            @Override
+                            public void onDataChange(
+                                    @NonNull DataSnapshot snapshot
+                            ) {
+
+                                mapaUidANombre.clear();
+                                mapaNombreAUid.clear();
+
+                                nombresCargados = true;
+
+
+                                // =================================================
+                                // RECORRER ESTUDIANTES
+                                // =================================================
+
+                                for (DataSnapshot child :
+                                        snapshot.getChildren()) {
+
+                                    String uid =
+                                            child.getKey();
+
+                                    String nombre =
+                                            child
+                                                    .child("nombre")
+                                                    .getValue(String.class);
+
+                                    String grado =
+                                            child
+                                                    .child("grado")
+                                                    .getValue(String.class);
+
+
+                                    if (uid != null
+                                            && nombre != null
+                                            && !nombre.trim().isEmpty()
+                                            && grado != null
+                                            && grado.equalsIgnoreCase(
+                                            gradoActual
+                                    )) {
+
+                                        String nombreMayusculas =
+                                                nombre
+                                                        .trim()
+                                                        .toUpperCase(
+                                                                Locale.getDefault()
+                                                        );
+
+
+                                        // UID -> NOMBRE
+                                        mapaUidANombre.put(
+                                                uid,
+                                                nombreMayusculas
+                                        );
+
+
+                                        // NOMBRE -> UID
+                                        mapaNombreAUid.put(
+                                                nombreMayusculas,
+                                                uid
+                                        );
+
+
+                                        Log.d(
+                                                TAG,
+                                                "✅ Estudiante cargado: "
+                                                        + uid
+                                                        + " -> "
+                                                        + nombreMayusculas
+                                        );
+                                    }
+                                }
+
+
+                                Log.d(
+                                        TAG,
+                                        "✅ Lista de estudiantes lista"
+                                );
+
+
+                                // =================================================
+                                // NO MOSTRAR CANTIDAD DE ESTUDIANTES
+                                // =================================================
+
+                                if (isAdded()) {
+
+                                    resetStatus();
+                                }
+                            }
+
+
+                            @Override
+                            public void onCancelled(
+                                    @NonNull DatabaseError error
+                            ) {
+
+                                Log.e(
+                                        TAG,
+                                        "❌ Error al cargar estudiantes: "
+                                                + error.getMessage()
+                                );
+
+                                nombresCargados = false;
+
+
+                                if (isAdded()) {
+
+                                    textViewStatus.setText(
+                                            "❌ Error al cargar datos"
+                                    );
+
+                                    textViewStatus.setTextColor(
+                                            ContextCompat.getColor(
+                                                    requireContext(),
+                                                    android.R.color
+                                                            .holo_red_dark
+                                            )
+                                    );
+                                }
+                            }
                         }
-                    }
-                }
-
-                Log.d("ASISTENCIA", "📊 Total estudiantes cargados para " + gradoActual + ": " + mapaUidANombre.size());
-
-                // Mostrar todos los nombres cargados
-                Log.d("ASISTENCIA", "📋 Nombres cargados (MAYÚSCULAS):");
-                for (String key : mapaNombreAUid.keySet()) {
-                    Log.d("ASISTENCIA", "   📌 " + key + " -> " + mapaNombreAUid.get(key));
-                }
-
-                requireActivity().runOnUiThread(() -> {
-                    if (mapaUidANombre.isEmpty()) {
-                        textViewStatus.setText("⚠️ No hay estudiantes en " + gradoActual);
-                        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark));
-                    } else {
-                        textViewStatus.setText("✅ " + mapaUidANombre.size() + " estudiantes cargados");
-                        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
-                    }
-                });
-
-                // Restaurar estado inicial después de 2 segundos
-                new android.os.Handler().postDelayed(() -> {
-                    if (editTextNameSearch.getText().toString().trim().isEmpty()) {
-                        resetStatus();
-                    }
-                }, 2000);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("ASISTENCIA", "❌ Error al cargar nombres: " + error.getMessage());
-                nombresCargados = false;
-
-                requireActivity().runOnUiThread(() -> {
-                    textViewStatus.setText("❌ Error al cargar datos");
-                    textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
-                });
-            }
-        });
+                );
     }
 
-    // ============================================================
-    // CONVERTIR NOMBRE A UID (INSENSIBLE A MAYÚSCULAS/MINÚSCULAS)
-    // ============================================================
-    private String convertirNombreAUid(String nombre) {
-        Log.d("ASISTENCIA", "🔄 CONVIRTIENDO: " + nombre + " a UID");
-        Log.d("ASISTENCIA", "   📊 nombresCargados: " + nombresCargados);
-        Log.d("ASISTENCIA", "   📊 mapaNombreAUid.size(): " + mapaNombreAUid.size());
 
-        // Si los nombres no están cargados, intentar cargarlos primero
-        if (!nombresCargados || mapaNombreAUid.isEmpty()) {
-            Log.d("ASISTENCIA", "⏳ Nombres no cargados aún, intentando cargar...");
-            cargarNombresEstudiantes();
+    // ============================================================
+    // CONVERTIR NOMBRE A UID
+    // ============================================================
+
+    private String convertirNombreAUid(
+            String nombre
+    ) {
+
+        if (!nombresCargados
+                || mapaNombreAUid.isEmpty()) {
+
             return null;
         }
 
-        // ✅ Convertir el nombre ingresado a MAYÚSCULAS para comparar
-        String nombreUpper = nombre.trim().toUpperCase();
-        Log.d("ASISTENCIA", "   🔑 Buscando (MAYÚSCULAS): " + nombreUpper);
 
-        // Buscar en el mapa (todas las claves están en mayúsculas)
-        if (mapaNombreAUid.containsKey(nombreUpper)) {
-            String uid = mapaNombreAUid.get(nombreUpper);
-            Log.d("ASISTENCIA", "   ✅ ENCONTRADO EXACTO: " + nombreUpper + " -> " + uid);
-            return uid;
+        String nombreUpper =
+                nombre
+                        .trim()
+                        .toUpperCase(
+                                Locale.getDefault()
+                        );
+
+
+        // ========================================================
+        // COINCIDENCIA EXACTA
+        // ========================================================
+
+        if (mapaNombreAUid.containsKey(
+                nombreUpper
+        )) {
+
+            return mapaNombreAUid.get(
+                    nombreUpper
+            );
         }
 
-        // Si no encuentra exacto, buscar por coincidencia parcial
-        Log.d("ASISTENCIA", "   ❌ No encontrado exacto, buscando sugerencias...");
-        String mejorCoincidencia = null;
-        int minDiferencia = Integer.MAX_VALUE;
 
-        for (String key : mapaNombreAUid.keySet()) {
-            int distancia = calcularDistancia(key, nombreUpper);
-            Log.d("ASISTENCIA", "      " + key + " vs " + nombreUpper + " = " + distancia);
-            if (distancia < minDiferencia && distancia < 5) {
+        // ========================================================
+        // COINCIDENCIA APROXIMADA
+        // ========================================================
+
+        String mejorCoincidencia = null;
+
+        int minDiferencia =
+                Integer.MAX_VALUE;
+
+
+        for (String key :
+                mapaNombreAUid.keySet()) {
+
+            int distancia =
+                    calcularDistancia(
+                            key,
+                            nombreUpper
+                    );
+
+
+            if (distancia < minDiferencia
+                    && distancia < 5) {
+
                 minDiferencia = distancia;
+
                 mejorCoincidencia = key;
             }
         }
 
+
         if (mejorCoincidencia != null) {
-            Log.d("ASISTENCIA", "   💡 SUGERENCIA: " + mejorCoincidencia + " -> " + mapaNombreAUid.get(mejorCoincidencia));
-            return mapaNombreAUid.get(mejorCoincidencia);
+
+            return mapaNombreAUid.get(
+                    mejorCoincidencia
+            );
         }
 
-        Log.d("ASISTENCIA", "   ❌ No se encontró coincidencia para: " + nombreUpper);
+
         return null;
     }
+
 
     // ============================================================
     // BUSCAR ESTUDIANTE
     // ============================================================
-    private void buscarEstudiante(String nombreCompleto) {
-        Log.d("ASISTENCIA", "========================================");
-        Log.d("ASISTENCIA", "🔍 1. Nombre ingresado: " + nombreCompleto);
-        Log.d("ASISTENCIA", "📊 mapaNombreAUid tiene: " + mapaNombreAUid.size() + " elementos");
-        Log.d("ASISTENCIA", "📊 mapaUidANombre tiene: " + mapaUidANombre.size() + " elementos");
-        Log.d("ASISTENCIA", "========================================");
 
-        // Verificar si los nombres están cargados
-        if (!nombresCargados || mapaUidANombre.isEmpty()) {
-            Log.d("ASISTENCIA", "⏳ Nombres no cargados, cargando...");
-            textViewStatus.setText("⏳ Cargando lista de estudiantes...");
-            textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark));
+    private void buscarEstudiante(
+            String nombreCompleto
+    ) {
+
+        Log.d(
+                TAG,
+                "🔍 Buscando: "
+                        + nombreCompleto
+        );
+
+
+        // ========================================================
+        // SI TODAVÍA NO CARGÓ LOS ESTUDIANTES
+        // ========================================================
+
+        if (!nombresCargados
+                || mapaUidANombre.isEmpty()) {
+
+            textViewStatus.setText(
+                    "⏳ Cargando lista..."
+            );
+
+            textViewStatus.setTextColor(
+                    ContextCompat.getColor(
+                            requireContext(),
+                            android.R.color.holo_blue_dark
+                    )
+            );
+
+
             cargarNombresEstudiantes();
-            // Esperar un poco y reintentar
-            new android.os.Handler().postDelayed(() -> {
-                buscarEstudiante(nombreCompleto);
-            }, 1000);
+
+
+            new android.os.Handler()
+                    .postDelayed(() -> {
+
+                        if (isAdded()) {
+
+                            buscarEstudiante(
+                                    nombreCompleto
+                            );
+                        }
+
+                    }, 1000);
+
+
             return;
         }
 
-        // Mostrar mensaje de búsqueda
-        textViewStatus.setText("🔍 Buscando...");
-        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_blue_dark));
 
-        // Convertir nombre a UID (insensible a mayúsculas/minúsculas)
-        String uid = convertirNombreAUid(nombreCompleto);
-        Log.d("ASISTENCIA", "🔑 2. UID encontrado: " + uid);
+        // ========================================================
+        // MOSTRAR BUSCANDO
+        // ========================================================
+
+        textViewStatus.setText(
+                "🔍 Buscando..."
+        );
+
+        textViewStatus.setTextColor(
+                ContextCompat.getColor(
+                        requireContext(),
+                        android.R.color.holo_blue_dark
+                )
+        );
+
+
+        // ========================================================
+        // OBTENER UID
+        // ========================================================
+
+        String uid =
+                convertirNombreAUid(
+                        nombreCompleto
+                );
+
 
         if (uid == null) {
-            Log.d("ASISTENCIA", "❌ 3. No se encontró UID para: " + nombreCompleto);
-            actualizarUI(false, null, null);
+
+            Log.d(
+                    TAG,
+                    "❌ Estudiante no encontrado"
+            );
+
+
+            actualizarUI(
+                    false,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+
             return;
         }
 
-        // Buscar en asistencias/[fecha]/[grado]/[uid]
-        DatabaseReference dayRef = databaseReference
-                .child("asistencias")
-                .child(currentDate)
-                .child(gradoActual)
-                .child(uid);
 
-        Log.d("ASISTENCIA", "📂 3. Ruta: asistencias/" + currentDate + "/" + gradoActual + "/" + uid);
+        Log.d(
+                TAG,
+                "✅ UID encontrado: " + uid
+        );
 
-        dayRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                Log.d("ASISTENCIA", "📊 4. Snapshot existe: " + snapshot.exists());
 
-                if (snapshot.exists()) {
-                    Boolean presente = snapshot.getValue(Boolean.class);
-                    Log.d("ASISTENCIA", "✅ 5. Resultado: " + presente);
-                    String nombreEstudiante = mapaUidANombre.getOrDefault(uid, nombreCompleto);
-                    actualizarUI(true, presente, nombreEstudiante);
-                } else {
-                    Log.d("ASISTENCIA", "❌ 5. No hay datos para: " + uid + " en " + currentDate);
-                    actualizarUI(false, null, null);
+        // ========================================================
+        // RUTA FIREBASE
+        // ========================================================
+
+        DatabaseReference studentRef =
+                databaseReference
+                        .child("asistencias")
+                        .child(currentDate)
+                        .child(gradoActual)
+                        .child(uid);
+
+
+        Log.d(
+                TAG,
+                "📂 Consultando: asistencias/"
+                        + currentDate
+                        + "/"
+                        + gradoActual
+                        + "/"
+                        + uid
+        );
+
+
+        // ========================================================
+        // CONSULTAR ASISTENCIA
+        // ========================================================
+
+        studentRef.addListenerForSingleValueEvent(
+                new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(
+                            @NonNull DataSnapshot snapshot
+                    ) {
+
+                        if (!snapshot.exists()) {
+
+                            Log.d(
+                                    TAG,
+                                    "❌ No existe asistencia"
+                            );
+
+
+                            actualizarUI(
+                                    false,
+                                    null,
+                                    null,
+                                    null,
+                                    null
+                            );
+
+                            return;
+                        }
+
+
+                        // =================================================
+                        // LEER NUEVA ESTRUCTURA
+                        // =================================================
+
+                        Boolean asistio =
+                                snapshot
+                                        .child("asistio")
+                                        .getValue(Boolean.class);
+
+
+                        String entrada =
+                                snapshot
+                                        .child("entrada")
+                                        .getValue(String.class);
+
+
+                        String salida =
+                                snapshot
+                                        .child("salida")
+                                        .getValue(String.class);
+
+
+                        Log.d(
+                                TAG,
+                                "📊 Asistió: " + asistio
+                        );
+
+                        Log.d(
+                                TAG,
+                                "⏰ Entrada: " + entrada
+                        );
+
+                        Log.d(
+                                TAG,
+                                "⏰ Salida: " + salida
+                        );
+
+
+                        // =================================================
+                        // OBTENER NOMBRE
+                        // =================================================
+
+                        String nombreEstudiante =
+                                mapaUidANombre.get(uid);
+
+
+                        if (nombreEstudiante == null) {
+
+                            nombreEstudiante =
+                                    nombreCompleto;
+                        }
+
+
+                        // =================================================
+                        // ACTUALIZAR PANTALLA
+                        // =================================================
+
+                        actualizarUI(
+                                true,
+                                asistio,
+                                nombreEstudiante,
+                                entrada,
+                                salida
+                        );
+                    }
+
+
+                    @Override
+                    public void onCancelled(
+                            @NonNull DatabaseError error
+                    ) {
+
+                        Log.e(
+                                TAG,
+                                "🔥 Error Firebase: "
+                                        + error.getMessage()
+                        );
+
+
+                        Toast.makeText(
+                                getContext(),
+                                "Error al consultar asistencia",
+                                Toast.LENGTH_SHORT
+                        ).show();
+
+
+                        resetStatus();
+                    }
                 }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("ASISTENCIA", "🔥 Error: " + error.getMessage());
-                Toast.makeText(getContext(), "Error al consultar asistencia", Toast.LENGTH_SHORT).show();
-                resetStatus();
-            }
-        });
+        );
     }
+
 
     // ============================================================
     // ACTUALIZAR UI
     // ============================================================
-    private void actualizarUI(boolean encontrado, Boolean presente, String nombre) {
+
+    private void actualizarUI(
+            boolean encontrado,
+            Boolean presente,
+            String nombre,
+            String entrada,
+            String salida
+    ) {
+
+        // ========================================================
+        // ESTUDIANTE ENCONTRADO
+        // ========================================================
+
         if (encontrado) {
-            // Mostrar el nombre con formato original (con espacios)
-            String nombreMostrar = nombre.replace("_", " ");
-            textViewStudentName.setText("👤 " + nombreMostrar);
-            textViewStudentName.setVisibility(View.VISIBLE);
 
-            if (presente != null && presente) {
-                // ✅ PRESENTE - Verde
-                statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
-                textViewStatus.setText("✅ PRESENTE");
-                textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
-                textViewEntryTime.setText("Hora de ingreso no encontrada");
-                textViewExitTime.setText("Hora de salida no encontrada");
+            String nombreMostrar =
+                    nombre != null
+                            ? nombre.replace("_", " ")
+                            : "Estudiante";
 
-            } else if (presente != null && !presente) {
-                // ❌ AUSENTE - Rojo
-                statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
-                textViewStatus.setText("❌ AUSENTE");
-                textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
-                textViewEntryTime.setText("--:--:--");
-                textViewExitTime.setText("--:--:--");
-            } else {
-                // ⚠️ Sin registro
-                statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark));
-                textViewStatus.setText("⚠️ Sin registro");
-                textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark));
-                textViewEntryTime.setText("--:--:--");
-                textViewExitTime.setText("--:--:--");
+
+            textViewStudentName.setText(
+                    "👤 " + nombreMostrar
+            );
+
+
+            textViewStudentName.setVisibility(
+                    View.VISIBLE
+            );
+
+
+            // ====================================================
+            // PRESENTE
+            // ====================================================
+
+            if (presente != null
+                    && presente) {
+
+                statusIndicator.setBackgroundColor(
+                        ContextCompat.getColor(
+                                requireContext(),
+                                android.R.color.holo_green_dark
+                        )
+                );
+
+
+                textViewStatus.setText(
+                        "✅ PRESENTE"
+                );
+
+
+                textViewStatus.setTextColor(
+                        ContextCompat.getColor(
+                                requireContext(),
+                                android.R.color.holo_green_dark
+                        )
+                );
+
+
+                // =================================================
+                // ENTRADA
+                // =================================================
+
+                if (entrada != null
+                        && !entrada.trim().isEmpty()) {
+
+                    textViewEntryTime.setText(
+                            entrada
+                    );
+
+                } else {
+
+                    textViewEntryTime.setText(
+                            "--:--"
+                    );
+                }
+
+
+                // =================================================
+                // SALIDA
+                // =================================================
+
+                if (salida != null
+                        && !salida.trim().isEmpty()) {
+
+                    textViewExitTime.setText(
+                            salida
+                    );
+
+                } else {
+
+                    textViewExitTime.setText(
+                            "--:--"
+                    );
+                }
             }
+
+
+            // ====================================================
+            // AUSENTE
+            // ====================================================
+
+            else if (presente != null
+                    && !presente) {
+
+                statusIndicator.setBackgroundColor(
+                        ContextCompat.getColor(
+                                requireContext(),
+                                android.R.color.holo_red_dark
+                        )
+                );
+
+
+                textViewStatus.setText(
+                        "❌ AUSENTE"
+                );
+
+
+                textViewStatus.setTextColor(
+                        ContextCompat.getColor(
+                                requireContext(),
+                                android.R.color.holo_red_dark
+                        )
+                );
+
+
+                textViewEntryTime.setText(
+                        "--:--"
+                );
+
+
+                textViewExitTime.setText(
+                        "--:--"
+                );
+            }
+
+
+            // ====================================================
+            // SIN REGISTRO
+            // ====================================================
+
+            else {
+
+                statusIndicator.setBackgroundColor(
+                        ContextCompat.getColor(
+                                requireContext(),
+                                android.R.color.holo_orange_dark
+                        )
+                );
+
+
+                textViewStatus.setText(
+                        "⚠️ Sin registro"
+                );
+
+
+                textViewStatus.setTextColor(
+                        ContextCompat.getColor(
+                                requireContext(),
+                                android.R.color.holo_orange_dark
+                        )
+                );
+
+
+                textViewEntryTime.setText(
+                        "--:--"
+                );
+
+
+                textViewExitTime.setText(
+                        "--:--"
+                );
+            }
+
         } else {
-            // ❌ No encontrado
-            statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
-            textViewStatus.setText("❌ Estudiante no encontrado");
-            textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
-            textViewStudentName.setVisibility(View.GONE);
-            textViewEntryTime.setText("--:--:--");
-            textViewExitTime.setText("--:--:--");
+
+            // ========================================================
+            // NO ENCONTRADO
+            // ========================================================
+
+            statusIndicator.setBackgroundColor(
+                    ContextCompat.getColor(
+                            requireContext(),
+                            android.R.color.darker_gray
+                    )
+            );
+
+
+            textViewStatus.setText(
+                    "❌ Estudiante no encontrado"
+            );
+
+
+            textViewStatus.setTextColor(
+                    ContextCompat.getColor(
+                            requireContext(),
+                            android.R.color.darker_gray
+                    )
+            );
+
+
+            textViewStudentName.setVisibility(
+                    View.GONE
+            );
+
+
+            textViewEntryTime.setText(
+                    "--:--"
+            );
+
+
+            textViewExitTime.setText(
+                    "--:--"
+            );
         }
     }
+
 
     // ============================================================
     // ESTADO INICIAL
     // ============================================================
+
     private void resetStatus() {
-        statusIndicator.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
-        textViewStatus.setText("🔍 Busca a tu hijo");
-        textViewStatus.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
-        textViewStudentName.setVisibility(View.GONE);
-        textViewEntryTime.setText("--:--:--");
-        textViewExitTime.setText("--:--:--");
+
+        if (!isAdded()) {
+            return;
+        }
+
+
+        statusIndicator.setBackgroundColor(
+                ContextCompat.getColor(
+                        requireContext(),
+                        android.R.color.darker_gray
+                )
+        );
+
+
+        textViewStatus.setText(
+                "🔍 Busca a tu hijo"
+        );
+
+
+        textViewStatus.setTextColor(
+                ContextCompat.getColor(
+                        requireContext(),
+                        android.R.color.darker_gray
+                )
+        );
+
+
+        textViewStudentName.setVisibility(
+                View.GONE
+        );
+
+
+        textViewEntryTime.setText(
+                "--:--"
+        );
+
+
+        textViewExitTime.setText(
+                "--:--"
+        );
     }
 
+
     // ============================================================
-    // CALCULAR DISTANCIA DE LEVENSHTEIN
+    // LEVENSHTEIN
     // ============================================================
-    private int calcularDistancia(String s1, String s2) {
-        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
-        for (int i = 0; i <= s1.length(); i++) {
+
+    private int calcularDistancia(
+            String s1,
+            String s2
+    ) {
+
+        int[][] dp =
+                new int[
+                        s1.length() + 1
+                        ][
+                        s2.length() + 1
+                        ];
+
+
+        for (int i = 0;
+             i <= s1.length();
+             i++) {
+
             dp[i][0] = i;
         }
-        for (int j = 0; j <= s2.length(); j++) {
+
+
+        for (int j = 0;
+             j <= s2.length();
+             j++) {
+
             dp[0][j] = j;
         }
-        for (int i = 1; i <= s1.length(); i++) {
-            for (int j = 1; j <= s2.length(); j++) {
-                int cost = s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1;
-                dp[i][j] = Math.min(Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
+
+
+        for (int i = 1;
+             i <= s1.length();
+             i++) {
+
+            for (int j = 1;
+                 j <= s2.length();
+                 j++) {
+
+                int cost =
+                        s1.charAt(i - 1)
+                                == s2.charAt(j - 1)
+                                ? 0
+                                : 1;
+
+
+                dp[i][j] =
+                        Math.min(
+                                Math.min(
+                                        dp[i - 1][j] + 1,
+                                        dp[i][j - 1] + 1
+                                ),
+                                dp[i - 1][j - 1] + cost
+                        );
             }
         }
-        return dp[s1.length()][s2.length()];
+
+
+        return dp[
+                s1.length()
+                ][
+                s2.length()
+                ];
     }
+
+
+    // ============================================================
+    // DESTROY VIEW
+    // ============================================================
 
     @Override
     public void onDestroyView() {
+
         super.onDestroyView();
+
         binding = null;
     }
 }
