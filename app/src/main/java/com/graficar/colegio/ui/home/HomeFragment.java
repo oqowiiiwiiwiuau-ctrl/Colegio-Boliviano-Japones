@@ -5,17 +5,18 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
-import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -24,68 +25,60 @@ import com.google.firebase.database.ValueEventListener;
 import com.graficar.colegio.R;
 import com.graficar.colegio.databinding.FragmentHomeBinding;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 public class HomeFragment extends Fragment {
+
+    private static final String TAG = "HomeFragment";
 
     private FragmentHomeBinding binding;
 
     // ============================================================
     // VISTAS
     // ============================================================
-
-    private EditText editTextNameSearch;
+    private LinearLayout contenedorHijos;
     private TextView textViewStatus;
-    private View statusIndicator;
-    private TextView textViewEntryTime;
-    private TextView textViewExitTime;
     private TextView textViewStudentName;
     private TextView textViewDate;
-    private Button btnBuscar;
 
     // ============================================================
     // FIREBASE
     // ============================================================
-
-    private DatabaseReference databaseReference;
+    private DatabaseReference dbRef;
+    private FirebaseAuth mAuth;
 
     // ============================================================
-    // FECHA DE PRUEBA
+    // DATOS DEL PADRE
     // ============================================================
-
-    private String currentDate = "2026-08-20";
+    private String authUid;
+    private String idLocalPadre;
+    private String nombrePadre;
+    private List<String> hijosUids = new ArrayList<>();
 
     // ============================================================
     // MAPAS
     // ============================================================
-
-    // UID -> Nombre
     private final Map<String, String> mapaUidANombre = new HashMap<>();
 
-    // Nombre en MAYÚSCULAS -> UID
-    private final Map<String, String> mapaNombreAUid = new HashMap<>();
-
-    private boolean nombresCargados = false;
+    // ============================================================
+    // FECHA ACTUAL (formato YYYY-MM-DD)
+    // ============================================================
+    private String fechaActual;
 
     // ============================================================
-    // GRADO
+    // GRADO POR DEFECTO (si lo necesitas)
     // ============================================================
-
     private final String gradoActual = "primeroC";
-
-    // ============================================================
-    // LOG
-    // ============================================================
-
-    private static final String TAG = "ASISTENCIA";
-
 
     // ============================================================
     // ON CREATE VIEW
     // ============================================================
-
     @Nullable
     @Override
     public View onCreateView(
@@ -93,966 +86,307 @@ public class HomeFragment extends Fragment {
             ViewGroup container,
             Bundle savedInstanceState
     ) {
-
-        binding = FragmentHomeBinding.inflate(
-                inflater,
-                container,
-                false
-        );
-
+        binding = FragmentHomeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         // ========================================================
         // INICIALIZAR VISTAS
         // ========================================================
-
-        editTextNameSearch =
-                root.findViewById(R.id.editTextNameSearch);
-
-        textViewStatus =
-                root.findViewById(R.id.textViewStatus);
-
-        statusIndicator =
-                root.findViewById(R.id.statusIndicator);
-
-        textViewEntryTime =
-                root.findViewById(R.id.textViewEntryTime);
-
-        textViewExitTime =
-                root.findViewById(R.id.textViewExitTime);
-
-        textViewStudentName =
-                root.findViewById(R.id.textViewStudentName);
-
-        textViewDate =
-                root.findViewById(R.id.textViewDate);
-
-        btnBuscar =
-                root.findViewById(R.id.btnBuscar);
-
+        contenedorHijos = root.findViewById(R.id.contenedorHijos);
+        textViewStatus = root.findViewById(R.id.textViewStatus);
+        textViewStudentName = root.findViewById(R.id.textViewStudentName);
+        textViewDate = root.findViewById(R.id.textViewDate);
 
         // ========================================================
-        // FECHA
+        // FECHA ACTUAL
         // ========================================================
-
-        textViewDate.setText("📅 " + currentDate);
-
+        fechaActual = new SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                .format(new Date());
+        textViewDate.setText("📅 " + fechaActual);
 
         // ========================================================
         // FIREBASE
         // ========================================================
-
-        databaseReference =
-                FirebaseDatabase
-                        .getInstance()
-                        .getReference();
-
+        dbRef = FirebaseDatabase.getInstance().getReference();
+        mAuth = FirebaseAuth.getInstance();
 
         // ========================================================
-        // ESTADO INICIAL
+        // CARGAR DATOS DEL PADRE LOGUEADO
         // ========================================================
-
-        resetStatus();
-
-
-        // ========================================================
-        // CARGAR ESTUDIANTES
-        // ========================================================
-
-        cargarNombresEstudiantes();
-
-
-        // ========================================================
-        // BOTÓN BUSCAR
-        // ========================================================
-
-        btnBuscar.setOnClickListener(v -> {
-
-            String query =
-                    editTextNameSearch
-                            .getText()
-                            .toString()
-                            .trim();
-
-            if (!query.isEmpty()) {
-
-                buscarEstudiante(query);
-
-            } else {
-
-                Toast.makeText(
-                        getContext(),
-                        "Ingresa el nombre de tu hijo",
-                        Toast.LENGTH_SHORT
-                ).show();
-            }
-        });
-
-
-        // ========================================================
-        // TECLADO - ENTER / BUSCAR
-        // ========================================================
-
-        editTextNameSearch.setOnEditorActionListener(
-                (v, actionId, event) -> {
-
-                    if (actionId == EditorInfo.IME_ACTION_SEARCH
-                            || actionId == EditorInfo.IME_ACTION_DONE) {
-
-                        String query =
-                                editTextNameSearch
-                                        .getText()
-                                        .toString()
-                                        .trim();
-
-                        if (!query.isEmpty()) {
-
-                            buscarEstudiante(query);
-
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-        );
-
+        cargarPadreYHijos();
 
         return root;
     }
 
-
     // ============================================================
-    // CARGAR NOMBRES DE ESTUDIANTES
+    // CARGAR PADRE Y SUS HIJOS
     // ============================================================
-
-    private void cargarNombresEstudiantes() {
-
-        Log.d(
-                TAG,
-                "📥 Cargando estudiantes..."
-        );
-
-        textViewStatus.setText(
-                "🔄 Cargando..."
-        );
-
-        textViewStatus.setTextColor(
-                ContextCompat.getColor(
-                        requireContext(),
-                        android.R.color.holo_blue_dark
-                )
-        );
-
-
-        databaseReference
-                .child("estudiantes")
-                .addListenerForSingleValueEvent(
-                        new ValueEventListener() {
-
-                            @Override
-                            public void onDataChange(
-                                    @NonNull DataSnapshot snapshot
-                            ) {
-
-                                mapaUidANombre.clear();
-                                mapaNombreAUid.clear();
-
-                                nombresCargados = true;
-
-
-                                // =================================================
-                                // RECORRER ESTUDIANTES
-                                // =================================================
-
-                                for (DataSnapshot child :
-                                        snapshot.getChildren()) {
-
-                                    String uid =
-                                            child.getKey();
-
-                                    String nombre =
-                                            child
-                                                    .child("nombre")
-                                                    .getValue(String.class);
-
-                                    String grado =
-                                            child
-                                                    .child("grado")
-                                                    .getValue(String.class);
-
-
-                                    if (uid != null
-                                            && nombre != null
-                                            && !nombre.trim().isEmpty()
-                                            && grado != null
-                                            && grado.equalsIgnoreCase(
-                                            gradoActual
-                                    )) {
-
-                                        String nombreMayusculas =
-                                                nombre
-                                                        .trim()
-                                                        .toUpperCase(
-                                                                Locale.getDefault()
-                                                        );
-
-
-                                        // UID -> NOMBRE
-                                        mapaUidANombre.put(
-                                                uid,
-                                                nombreMayusculas
-                                        );
-
-
-                                        // NOMBRE -> UID
-                                        mapaNombreAUid.put(
-                                                nombreMayusculas,
-                                                uid
-                                        );
-
-
-                                        Log.d(
-                                                TAG,
-                                                "✅ Estudiante cargado: "
-                                                        + uid
-                                                        + " -> "
-                                                        + nombreMayusculas
-                                        );
-                                    }
-                                }
-
-
-                                Log.d(
-                                        TAG,
-                                        "✅ Lista de estudiantes lista"
-                                );
-
-
-                                // =================================================
-                                // NO MOSTRAR CANTIDAD DE ESTUDIANTES
-                                // =================================================
-
-                                if (isAdded()) {
-
-                                    resetStatus();
-                                }
-                            }
-
-
-                            @Override
-                            public void onCancelled(
-                                    @NonNull DatabaseError error
-                            ) {
-
-                                Log.e(
-                                        TAG,
-                                        "❌ Error al cargar estudiantes: "
-                                                + error.getMessage()
-                                );
-
-                                nombresCargados = false;
-
-
-                                if (isAdded()) {
-
-                                    textViewStatus.setText(
-                                            "❌ Error al cargar datos"
-                                    );
-
-                                    textViewStatus.setTextColor(
-                                            ContextCompat.getColor(
-                                                    requireContext(),
-                                                    android.R.color
-                                                            .holo_red_dark
-                                            )
-                                    );
-                                }
-                            }
-                        }
-                );
-    }
-
-
-    // ============================================================
-    // CONVERTIR NOMBRE A UID
-    // ============================================================
-
-    private String convertirNombreAUid(
-            String nombre
-    ) {
-
-        if (!nombresCargados
-                || mapaNombreAUid.isEmpty()) {
-
-            return null;
-        }
-
-
-        String nombreUpper =
-                nombre
-                        .trim()
-                        .toUpperCase(
-                                Locale.getDefault()
-                        );
-
-
-        // ========================================================
-        // COINCIDENCIA EXACTA
-        // ========================================================
-
-        if (mapaNombreAUid.containsKey(
-                nombreUpper
-        )) {
-
-            return mapaNombreAUid.get(
-                    nombreUpper
-            );
-        }
-
-
-        // ========================================================
-        // COINCIDENCIA APROXIMADA
-        // ========================================================
-
-        String mejorCoincidencia = null;
-
-        int minDiferencia =
-                Integer.MAX_VALUE;
-
-
-        for (String key :
-                mapaNombreAUid.keySet()) {
-
-            int distancia =
-                    calcularDistancia(
-                            key,
-                            nombreUpper
-                    );
-
-
-            if (distancia < minDiferencia
-                    && distancia < 5) {
-
-                minDiferencia = distancia;
-
-                mejorCoincidencia = key;
-            }
-        }
-
-
-        if (mejorCoincidencia != null) {
-
-            return mapaNombreAUid.get(
-                    mejorCoincidencia
-            );
-        }
-
-
-        return null;
-    }
-
-
-    // ============================================================
-    // BUSCAR ESTUDIANTE
-    // ============================================================
-
-    private void buscarEstudiante(
-            String nombreCompleto
-    ) {
-
-        Log.d(
-                TAG,
-                "🔍 Buscando: "
-                        + nombreCompleto
-        );
-
-
-        // ========================================================
-        // SI TODAVÍA NO CARGÓ LOS ESTUDIANTES
-        // ========================================================
-
-        if (!nombresCargados
-                || mapaUidANombre.isEmpty()) {
-
-            textViewStatus.setText(
-                    "⏳ Cargando lista..."
-            );
-
-            textViewStatus.setTextColor(
-                    ContextCompat.getColor(
-                            requireContext(),
-                            android.R.color.holo_blue_dark
-                    )
-            );
-
-
-            cargarNombresEstudiantes();
-
-
-            new android.os.Handler()
-                    .postDelayed(() -> {
-
-                        if (isAdded()) {
-
-                            buscarEstudiante(
-                                    nombreCompleto
-                            );
-                        }
-
-                    }, 1000);
-
-
+    private void cargarPadreYHijos() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            textViewStatus.setText("❌ No hay sesión activa");
             return;
         }
 
+        authUid = user.getUid();
 
-        // ========================================================
-        // MOSTRAR BUSCANDO
-        // ========================================================
-
-        textViewStatus.setText(
-                "🔍 Buscando..."
-        );
-
-        textViewStatus.setTextColor(
-                ContextCompat.getColor(
-                        requireContext(),
-                        android.R.color.holo_blue_dark
-                )
-        );
-
-
-        // ========================================================
-        // OBTENER UID
-        // ========================================================
-
-        String uid =
-                convertirNombreAUid(
-                        nombreCompleto
-                );
-
-
-        if (uid == null) {
-
-            Log.d(
-                    TAG,
-                    "❌ Estudiante no encontrado"
-            );
-
-
-            actualizarUI(
-                    false,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-
-            return;
-        }
-
-
-        Log.d(
-                TAG,
-                "✅ UID encontrado: " + uid
-        );
-
-
-        // ========================================================
-        // RUTA FIREBASE
-        // ========================================================
-
-        DatabaseReference studentRef =
-                databaseReference
-                        .child("asistencias")
-                        .child(currentDate)
-                        .child(gradoActual)
-                        .child(uid);
-
-
-        Log.d(
-                TAG,
-                "📂 Consultando: asistencias/"
-                        + currentDate
-                        + "/"
-                        + gradoActual
-                        + "/"
-                        + uid
-        );
-
-
-        // ========================================================
-        // CONSULTAR ASISTENCIA
-        // ========================================================
-
-        studentRef.addListenerForSingleValueEvent(
-                new ValueEventListener() {
-
+        // 1. Buscar en authIndex
+        dbRef.child("authIndex").child(authUid)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
-                    public void onDataChange(
-                            @NonNull DataSnapshot snapshot
-                    ) {
-
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
                         if (!snapshot.exists()) {
-
-                            Log.d(
-                                    TAG,
-                                    "❌ No existe asistencia"
-                            );
-
-
-                            actualizarUI(
-                                    false,
-                                    null,
-                                    null,
-                                    null,
-                                    null
-                            );
-
+                            textViewStatus.setText("❌ Usuario no registrado");
                             return;
                         }
 
+                        String tipo = snapshot.child("tipo").getValue(String.class);
+                        idLocalPadre = snapshot.child("idLocal").getValue(String.class);
 
-                        // =================================================
-                        // LEER NUEVA ESTRUCTURA
-                        // =================================================
-
-                        Boolean asistio =
-                                snapshot
-                                        .child("asistio")
-                                        .getValue(Boolean.class);
-
-
-                        String entrada =
-                                snapshot
-                                        .child("entrada")
-                                        .getValue(String.class);
-
-
-                        String salida =
-                                snapshot
-                                        .child("salida")
-                                        .getValue(String.class);
-
-
-                        Log.d(
-                                TAG,
-                                "📊 Asistió: " + asistio
-                        );
-
-                        Log.d(
-                                TAG,
-                                "⏰ Entrada: " + entrada
-                        );
-
-                        Log.d(
-                                TAG,
-                                "⏰ Salida: " + salida
-                        );
-
-
-                        // =================================================
-                        // OBTENER NOMBRE
-                        // =================================================
-
-                        String nombreEstudiante =
-                                mapaUidANombre.get(uid);
-
-
-                        if (nombreEstudiante == null) {
-
-                            nombreEstudiante =
-                                    nombreCompleto;
+                        // Verificar que sea apoderado
+                        if (!"apoderado".equals(tipo)) {
+                            textViewStatus.setText("⚠️ Esta pantalla es para apoderados");
+                            return;
                         }
 
-
-                        // =================================================
-                        // ACTUALIZAR PANTALLA
-                        // =================================================
-
-                        actualizarUI(
-                                true,
-                                asistio,
-                                nombreEstudiante,
-                                entrada,
-                                salida
-                        );
+                        // 2. Cargar datos del padre
+                        cargarDatosPadre();
                     }
-
 
                     @Override
-                    public void onCancelled(
-                            @NonNull DatabaseError error
-                    ) {
-
-                        Log.e(
-                                TAG,
-                                "🔥 Error Firebase: "
-                                        + error.getMessage()
-                        );
-
-
-                        Toast.makeText(
-                                getContext(),
-                                "Error al consultar asistencia",
-                                Toast.LENGTH_SHORT
-                        ).show();
-
-
-                        resetStatus();
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        textViewStatus.setText("Error: " + error.getMessage());
                     }
-                }
-        );
+                });
     }
 
+    // ============================================================
+    // CARGAR DATOS DEL PADRE
+    // ============================================================
+    private void cargarDatosPadre() {
+        dbRef.child("usuarios").child(idLocalPadre)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (!snapshot.exists()) {
+                            textViewStatus.setText("❌ Datos del apoderado no encontrados");
+                            return;
+                        }
+
+                        nombrePadre = snapshot.child("nombre").getValue(String.class);
+
+                        // Mostrar nombre del padre como encabezado
+                        textViewStudentName.setText("👨‍👩‍👧 Apoderado: " + nombrePadre);
+                        textViewStudentName.setVisibility(View.VISIBLE);
+
+                        // 3. Obtener lista de hijos
+                        hijosUids.clear();
+                        for (DataSnapshot hijo : snapshot.child("estudiantes").getChildren()) {
+                            String uid = hijo.getValue(String.class);
+                            if (uid != null) {
+                                hijosUids.add(uid);
+                            }
+                        }
+
+                        if (hijosUids.isEmpty()) {
+                            textViewStatus.setText("No tienes hijos registrados");
+                            return;
+                        }
+
+                        // 4. Cargar nombres e info de cada hijo
+                        cargarNombresHijos();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        textViewStatus.setText("Error: " + error.getMessage());
+                    }
+                });
+    }
 
     // ============================================================
-    // ACTUALIZAR UI
+    // CARGAR NOMBRES DE LOS HIJOS
     // ============================================================
-
-    private void actualizarUI(
-            boolean encontrado,
-            Boolean presente,
-            String nombre,
-            String entrada,
-            String salida
-    ) {
-
-        // ========================================================
-        // ESTUDIANTE ENCONTRADO
-        // ========================================================
-
-        if (encontrado) {
-
-            String nombreMostrar =
-                    nombre != null
-                            ? nombre.replace("_", " ")
-                            : "Estudiante";
-
-
-            textViewStudentName.setText(
-                    "👤 " + nombreMostrar
-            );
-
-
-            textViewStudentName.setVisibility(
-                    View.VISIBLE
-            );
-
-
-            // ====================================================
-            // PRESENTE
-            // ====================================================
-
-            if (presente != null
-                    && presente) {
-
-                statusIndicator.setBackgroundColor(
-                        ContextCompat.getColor(
-                                requireContext(),
-                                android.R.color.holo_green_dark
-                        )
-                );
-
-
-                textViewStatus.setText(
-                        "✅ PRESENTE"
-                );
-
-
-                textViewStatus.setTextColor(
-                        ContextCompat.getColor(
-                                requireContext(),
-                                android.R.color.holo_green_dark
-                        )
-                );
-
-
-                // =================================================
-                // ENTRADA
-                // =================================================
-
-                if (entrada != null
-                        && !entrada.trim().isEmpty()) {
-
-                    textViewEntryTime.setText(
-                            entrada
-                    );
-
-                } else {
-
-                    textViewEntryTime.setText(
-                            "--:--"
-                    );
-                }
-
-
-                // =================================================
-                // SALIDA
-                // =================================================
-
-                if (salida != null
-                        && !salida.trim().isEmpty()) {
-
-                    textViewExitTime.setText(
-                            salida
-                    );
-
-                } else {
-
-                    textViewExitTime.setText(
-                            "--:--"
-                    );
-                }
-            }
-
-
-            // ====================================================
-            // AUSENTE
-            // ====================================================
-
-            else if (presente != null
-                    && !presente) {
-
-                statusIndicator.setBackgroundColor(
-                        ContextCompat.getColor(
-                                requireContext(),
-                                android.R.color.holo_red_dark
-                        )
-                );
-
-
-                textViewStatus.setText(
-                        "❌ AUSENTE"
-                );
-
-
-                textViewStatus.setTextColor(
-                        ContextCompat.getColor(
-                                requireContext(),
-                                android.R.color.holo_red_dark
-                        )
-                );
-
-
-                textViewEntryTime.setText(
-                        "--:--"
-                );
-
-
-                textViewExitTime.setText(
-                        "--:--"
-                );
-            }
-
-
-            // ====================================================
-            // SIN REGISTRO
-            // ====================================================
-
-            else {
-
-                statusIndicator.setBackgroundColor(
-                        ContextCompat.getColor(
-                                requireContext(),
-                                android.R.color.holo_orange_dark
-                        )
-                );
-
-
-                textViewStatus.setText(
-                        "⚠️ Sin registro"
-                );
-
-
-                textViewStatus.setTextColor(
-                        ContextCompat.getColor(
-                                requireContext(),
-                                android.R.color.holo_orange_dark
-                        )
-                );
-
-
-                textViewEntryTime.setText(
-                        "--:--"
-                );
-
-
-                textViewExitTime.setText(
-                        "--:--"
-                );
-            }
-
-        } else {
-
-            // ========================================================
-            // NO ENCONTRADO
-            // ========================================================
-
-            statusIndicator.setBackgroundColor(
-                    ContextCompat.getColor(
-                            requireContext(),
-                            android.R.color.darker_gray
-                    )
-            );
-
-
-            textViewStatus.setText(
-                    "❌ Estudiante no encontrado"
-            );
-
-
-            textViewStatus.setTextColor(
-                    ContextCompat.getColor(
-                            requireContext(),
-                            android.R.color.darker_gray
-                    )
-            );
-
-
-            textViewStudentName.setVisibility(
-                    View.GONE
-            );
-
-
-            textViewEntryTime.setText(
-                    "--:--"
-            );
-
-
-            textViewExitTime.setText(
-                    "--:--"
-            );
+    private void cargarNombresHijos() {
+        mapaUidANombre.clear();
+        final int total = hijosUids.size();
+        final int[] cargados = {0};
+
+        for (String uid : hijosUids) {
+            dbRef.child("estudiantes").child(uid)
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            String nombre = snapshot.child("nombre").getValue(String.class);
+                            if (nombre != null) {
+                                mapaUidANombre.put(uid, nombre);
+                            }
+                            cargados[0]++;
+                            if (cargados[0] == total) {
+                                // Ya tenemos todos los nombres
+                                mostrarHijosConAsistencia();
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            cargados[0]++;
+                            if (cargados[0] == total) {
+                                mostrarHijosConAsistencia();
+                            }
+                        }
+                    });
         }
     }
 
+    // ============================================================
+    // MOSTRAR HIJOS CON SU ASISTENCIA
+    // ============================================================
+    private void mostrarHijosConAsistencia() {
+        if (!isAdded()) return;
+
+        // Limpiar contenedor
+        contenedorHijos.removeAllViews();
+
+        final int total = hijosUids.size();
+        final int[] cargados = {0};
+
+        for (String uidHijo : hijosUids) {
+            // Crear card para cada hijo
+            CardView card = crearCardHijo(uidHijo);
+            contenedorHijos.addView(card);
+
+            // Consultar asistencia de ese hijo
+            dbRef.child("asistencias")
+                    .child(fechaActual)
+                    .child(gradoActual)
+                    .child(uidHijo)
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            actualizarCardAsistencia(card, snapshot);
+                            cargados[0]++;
+                            if (cargados[0] == total) {
+                                textViewStatus.setText("✅ Datos cargados");
+                                textViewStatus.setTextColor(
+                                        ContextCompat.getColor(requireContext(),
+                                                android.R.color.holo_green_dark));
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            cargados[0]++;
+                            if (cargados[0] == total) {
+                                textViewStatus.setText("Error al cargar asistencias");
+                            }
+                        }
+                    });
+        }
+    }
 
     // ============================================================
-    // ESTADO INICIAL
+    // CREAR CARD PARA UN HIJO
     // ============================================================
+    private CardView crearCardHijo(String uidHijo) {
+        CardView card = new CardView(requireContext());
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, 16);
+        card.setLayoutParams(params);
+        card.setRadius(16);
+        card.setCardElevation(4);
+        card.setCardBackgroundColor(
+                ContextCompat.getColor(requireContext(), android.R.color.white));
 
-    private void resetStatus() {
+        LinearLayout contenido = new LinearLayout(requireContext());
+        contenido.setOrientation(LinearLayout.VERTICAL);
+        contenido.setPadding(24, 24, 24, 24);
+        contenido.setTag("contenido");
 
-        if (!isAdded()) {
+        // Nombre del hijo
+        TextView tvNombre = new TextView(requireContext());
+        String nombre = mapaUidANombre.getOrDefault(uidHijo, "Estudiante");
+        tvNombre.setText("👤 " + nombre);
+        tvNombre.setTextSize(18);
+        tvNombre.setTextColor(
+                ContextCompat.getColor(requireContext(), android.R.color.black));
+        tvNombre.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvNombre.setTag("nombre");
+        contenido.addView(tvNombre);
+
+        // Estado
+        TextView tvEstado = new TextView(requireContext());
+        tvEstado.setText("🔄 Consultando...");
+        tvEstado.setTextSize(16);
+        tvEstado.setPadding(0, 16, 0, 0);
+        tvEstado.setTag("estado");
+        contenido.addView(tvEstado);
+
+        // Entrada
+        TextView tvEntrada = new TextView(requireContext());
+        tvEntrada.setText("⏰ Entrada: --:--");
+        tvEntrada.setTextSize(14);
+        tvEntrada.setPadding(0, 12, 0, 0);
+        tvEntrada.setTag("entrada");
+        contenido.addView(tvEntrada);
+
+        // Salida
+        TextView tvSalida = new TextView(requireContext());
+        tvSalida.setText("⏰ Salida: --:--");
+        tvSalida.setTextSize(14);
+        tvSalida.setPadding(0, 8, 0, 0);
+        tvSalida.setTag("salida");
+        contenido.addView(tvSalida);
+
+        card.addView(contenido);
+        return card;
+    }
+
+    // ============================================================
+    // ACTUALIZAR CARD CON ASISTENCIA
+    // ============================================================
+    private void actualizarCardAsistencia(CardView card, DataSnapshot snapshot) {
+        LinearLayout contenido = card.findViewWithTag("contenido");
+        if (contenido == null) return;
+
+        TextView tvEstado = contenido.findViewWithTag("estado");
+        TextView tvEntrada = contenido.findViewWithTag("entrada");
+        TextView tvSalida = contenido.findViewWithTag("salida");
+
+        if (!snapshot.exists()) {
+            tvEstado.setText("⚠️ Sin registro de asistencia");
+            tvEstado.setTextColor(
+                    ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark));
             return;
         }
 
+        Boolean asistio = snapshot.child("asistio").getValue(Boolean.class);
+        String entrada = snapshot.child("entrada").getValue(String.class);
+        String salida = snapshot.child("salida").getValue(String.class);
 
-        statusIndicator.setBackgroundColor(
-                ContextCompat.getColor(
-                        requireContext(),
-                        android.R.color.darker_gray
-                )
-        );
-
-
-        textViewStatus.setText(
-                "🔍 Busca a tu hijo"
-        );
-
-
-        textViewStatus.setTextColor(
-                ContextCompat.getColor(
-                        requireContext(),
-                        android.R.color.darker_gray
-                )
-        );
-
-
-        textViewStudentName.setVisibility(
-                View.GONE
-        );
-
-
-        textViewEntryTime.setText(
-                "--:--"
-        );
-
-
-        textViewExitTime.setText(
-                "--:--"
-        );
+        if (asistio != null && asistio) {
+            tvEstado.setText("✅ PRESENTE");
+            tvEstado.setTextColor(
+                    ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark));
+            tvEntrada.setText("⏰ Entrada: " + (entrada != null ? entrada : "--:--"));
+            tvSalida.setText("⏰ Salida: " + (salida != null ? salida : "--:--"));
+        } else {
+            tvEstado.setText("❌ AUSENTE");
+            tvEstado.setTextColor(
+                    ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
+            tvEntrada.setText("⏰ Entrada: --:--");
+            tvSalida.setText("⏰ Salida: --:--");
+        }
     }
 
-
     // ============================================================
-    // LEVENSHTEIN
+    // ON DESTROY VIEW
     // ============================================================
-
-    private int calcularDistancia(
-            String s1,
-            String s2
-    ) {
-
-        int[][] dp =
-                new int[
-                        s1.length() + 1
-                        ][
-                        s2.length() + 1
-                        ];
-
-
-        for (int i = 0;
-             i <= s1.length();
-             i++) {
-
-            dp[i][0] = i;
-        }
-
-
-        for (int j = 0;
-             j <= s2.length();
-             j++) {
-
-            dp[0][j] = j;
-        }
-
-
-        for (int i = 1;
-             i <= s1.length();
-             i++) {
-
-            for (int j = 1;
-                 j <= s2.length();
-                 j++) {
-
-                int cost =
-                        s1.charAt(i - 1)
-                                == s2.charAt(j - 1)
-                                ? 0
-                                : 1;
-
-
-                dp[i][j] =
-                        Math.min(
-                                Math.min(
-                                        dp[i - 1][j] + 1,
-                                        dp[i][j - 1] + 1
-                                ),
-                                dp[i - 1][j - 1] + cost
-                        );
-            }
-        }
-
-
-        return dp[
-                s1.length()
-                ][
-                s2.length()
-                ];
-    }
-
-
-    // ============================================================
-    // DESTROY VIEW
-    // ============================================================
-
     @Override
     public void onDestroyView() {
-
         super.onDestroyView();
-
         binding = null;
     }
 }

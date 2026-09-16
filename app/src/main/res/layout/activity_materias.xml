@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/fondo_app">
+
+    <!-- Encabezado -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/color_primario"
+        android:padding="20dp"
+        android:elevation="8dp">
+
+        <TextView
+            android:id="@+id/tvTituloMaterias"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📚 Primero"
+            android:textSize="22sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/tvSubtituloMaterias"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Selecciona un paralelo"
+            android:textSize="14sp"
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:alpha="0.9"
+            android:layout_marginTop="6dp" />
+
+    </LinearLayout>
+
+    <!-- Estado de carga -->
+    <TextView
+        android:id="@+id/tvEstadoMaterias"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔄 Cargando paralelos..."
+        android:textSize="14sp"
+        android:textColor="#6B7A8F"
+        android:gravity="center"
+        android:padding="16dp" />
+
+    <!-- Lista de paralelos -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewParalelos"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="12dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical"
+        android:visibility="gone" />
+
+</LinearLayout>

@@ -13,7 +13,20 @@
           "package_name": "com.graficar.colegio"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1050434577754-5spcsi1e0af0keeljpplvmsdun7i6hai.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.graficar.colegio",
+            "certificate_hash": "85215fe23948a15c44372a40356017b104cb9e0f"
+          }
+        },
+        {
+          "client_id": "1050434577754-0a0dgnmff2bfdhigghq7fs4u2fl7qe9o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCYzysn2TTnHSQlLU74Y4DHHtrqDI35a_A"
@@ -21,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1050434577754-0a0dgnmff2bfdhigghq7fs4u2fl7qe9o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -1,15 +1,16 @@
 package com.graficar.colegio.ui.notifications;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +20,8 @@ import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -27,46 +30,66 @@ import com.google.firebase.database.ValueEventListener;
 import com.graficar.colegio.R;
 import com.graficar.colegio.databinding.FragmentNotificationsBinding;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 public class NotificationsFragment extends Fragment {
 
+    private static final String TAG = "NOTIFICACIONES";
+
     private FragmentNotificationsBinding binding;
 
     // ============================================================
-    // UI COMPONENTS
+    // UI
     // ============================================================
-    private EditText editTextStudentName;
-    private Button btnBuscar;
+    private Spinner spinnerHijos;
     private TextView textViewStudentName;
+    private TextView textViewTotalObs;
     private LinearLayout layoutObservaciones;
-    private ScrollView scrollViewResultados;
+    private View scrollViewResultados;
+    private TextView textViewEstado;
 
     // ============================================================
     // FIREBASE
     // ============================================================
-    private DatabaseReference databaseReference;
+    private DatabaseReference dbRef;
+    private FirebaseAuth mAuth;
 
     // ============================================================
-    // MAPAS PARA NOMBRES Y UIDS
+    // PADRE Y HIJOS
     // ============================================================
-    private Map<String, String> mapaUidANombre = new HashMap<>();
-    private Map<String, String> mapaNombreAUid = new HashMap<>();
-    private boolean nombresCargados = false;
+    private String authUid;
+    private String idLocalPadre;
+    private String nombrePadre;
+
+    private final List<String> hijosUids = new ArrayList<>();
+    private final List<String> hijosNombres = new ArrayList<>();
+
+    private String currentStudentUid = "";
+    private String currentStudentName = "";
 
     // ============================================================
-    // CONFIGURACIÓN
+    // CACHÉ DE PROFESORES (para mostrar nombre en lugar del ID)
     // ============================================================
-    private String gradoActual = "primeroC";
-    private String currentDate;
+    private final Map<String, String> mapaProfesorIdANombre = new HashMap<>();
+    private boolean profesoresCargados = false;
 
-    private final String[] trimestres = {"trimestre1", "trimestre2", "trimestre3"};
-    private final String[] trimestresNombres = {"Trimestre 1", "Trimestre 2", "Trimestre 3"};
+    // ============================================================
+    // PREFERENCIAS (para marcar observaciones como leídas)
+    // ============================================================
+    private SharedPreferences prefs;
 
+    // ============================================================
+    // ON CREATE VIEW
+    // ============================================================
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -75,244 +98,298 @@ public class NotificationsFragment extends Fragment {
         binding = FragmentNotificationsBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        // ============================================================
-        // INICIALIZAR VISTAS
-        // ============================================================
-        editTextStudentName = root.findViewById(R.id.editTextStudentName);
-        btnBuscar = root.findViewById(R.id.btnBuscarObservaciones);
+        // Inicializar vistas
+        spinnerHijos = root.findViewById(R.id.spinnerHijos);
         textViewStudentName = root.findViewById(R.id.textViewStudentName);
+        textViewTotalObs = root.findViewById(R.id.textViewTotalObs);
         layoutObservaciones = root.findViewById(R.id.layoutObservaciones);
         scrollViewResultados = root.findViewById(R.id.scrollViewResultados);
+        textViewEstado = root.findViewById(R.id.textViewEstado);
 
-        // Obtener fecha actual
-        currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        // SharedPreferences
+        prefs = requireContext().getSharedPreferences("NOTIFICACIONES", Context.MODE_PRIVATE);
 
-        // Inicializar Firebase
-        databaseReference = FirebaseDatabase.getInstance().getReference();
+        // Firebase
+        dbRef = FirebaseDatabase.getInstance().getReference();
+        mAuth = FirebaseAuth.getInstance();
 
-        // Cargar nombres de estudiantes
-        cargarNombresEstudiantes();
-
-        // ============================================================
-        // CONFIGURAR BOTÓN DE BÚSQUEDA
-        // ============================================================
-        btnBuscar.setOnClickListener(v -> {
-            String query = editTextStudentName.getText().toString().trim();
-            if (!query.isEmpty()) {
-                buscarObservaciones(query);
-            } else {
-                Toast.makeText(getContext(), "Ingresa el nombre del estudiante", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        // Buscar al presionar Enter
-        editTextStudentName.setOnEditorActionListener((v, actionId, event) -> {
-            String query = editTextStudentName.getText().toString().trim();
-            if (!query.isEmpty()) {
-                buscarObservaciones(query);
-                return true;
-            }
-            return false;
-        });
-
-        // Limpiar resultados al borrar el texto
-        editTextStudentName.addTextChangedListener(new android.text.TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(android.text.Editable s) {
-                if (s.toString().trim().isEmpty()) {
-                    limpiarResultados();
-                }
-            }
-        });
-
-        // ============================================================
-        // ESTADO INICIAL
-        // ============================================================
+        // Ocultar resultados inicialmente
         limpiarResultados();
+        if (textViewEstado != null) {
+            textViewEstado.setText("🔄 Cargando...");
+            textViewEstado.setVisibility(View.VISIBLE);
+        }
+
+        // 1. Cargar nombres de profesores primero (para mostrarlos)
+        cargarNombresProfesores();
 
         return root;
     }
 
     // ============================================================
-    // CARGAR NOMBRES DE ESTUDIANTES
+    // CARGAR NOMBRES DE PROFESORES
     // ============================================================
-    private void cargarNombresEstudiantes() {
-        Log.d("NOTIFICACIONES", "📥 Cargando nombres de estudiantes...");
+    private void cargarNombresProfesores() {
+        dbRef.child("profesores")
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        mapaProfesorIdANombre.clear();
 
-        databaseReference.child("estudiantes").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                mapaUidANombre.clear();
-                mapaNombreAUid.clear();
-                nombresCargados = true;
-
-                if (snapshot.exists()) {
-                    for (DataSnapshot child : snapshot.getChildren()) {
-                        String uid = child.getKey();
-                        String nombre = child.child("nombre").getValue(String.class);
-                        String grado = child.child("grado").getValue(String.class);
-
-                        if (nombre != null && !nombre.isEmpty() && grado != null && grado.equals(gradoActual)) {
-                            String nombreMayusculas = nombre.toUpperCase();
-                            mapaUidANombre.put(uid, nombreMayusculas);
-                            mapaNombreAUid.put(nombreMayusculas, uid);
-                            Log.d("NOTIFICACIONES", "📌 Cargado: " + uid + " -> " + nombreMayusculas);
+                        for (DataSnapshot prof : snapshot.getChildren()) {
+                            String id = prof.getKey();
+                            String nombre = prof.child("nombre").getValue(String.class);
+                            if (id != null && nombre != null) {
+                                mapaProfesorIdANombre.put(id, nombre);
+                            }
                         }
-                    }
-                }
 
-                Log.d("NOTIFICACIONES", "📊 Total estudiantes cargados: " + mapaUidANombre.size());
+                        profesoresCargados = true;
+                        Log.d(TAG, "Profesores cargados: " + mapaProfesorIdANombre.size());
+
+                        // Después de cargar profesores, cargar el padre
+                        cargarPadreYHijos();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Error al cargar profesores: " + error.getMessage());
+                        // Aunque falle, seguimos con los IDs
+                        cargarPadreYHijos();
+                    }
+                });
+    }
+
+    // ============================================================
+    // CARGAR PADRE Y SUS HIJOS
+    // ============================================================
+    private void cargarPadreYHijos() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            mostrarErrorEstado("❌ No hay sesión activa");
+            return;
+        }
+
+        authUid = user.getUid();
+
+        dbRef.child("authIndex").child(authUid)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (!snapshot.exists()) {
+                            mostrarErrorEstado("❌ Usuario no registrado");
+                            return;
+                        }
+
+                        String tipo = snapshot.child("tipo").getValue(String.class);
+                        idLocalPadre = snapshot.child("idLocal").getValue(String.class);
+
+                        if (!"apoderado".equals(tipo)) {
+                            mostrarErrorEstado("⚠️ Esta pantalla es para apoderados");
+                            return;
+                        }
+
+                        cargarDatosPadre();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        mostrarErrorEstado("Error: " + error.getMessage());
+                    }
+                });
+    }
+
+    // ============================================================
+    // CARGAR DATOS DEL PADRE
+    // ============================================================
+    private void cargarDatosPadre() {
+        dbRef.child("usuarios").child(idLocalPadre)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (!snapshot.exists()) {
+                            mostrarErrorEstado("❌ Datos del apoderado no encontrados");
+                            return;
+                        }
+
+                        nombrePadre = snapshot.child("nombre").getValue(String.class);
+
+                        hijosUids.clear();
+                        for (DataSnapshot hijo : snapshot.child("estudiantes").getChildren()) {
+                            String uid = hijo.getValue(String.class);
+                            if (uid != null) {
+                                hijosUids.add(uid);
+                            }
+                        }
+
+                        if (hijosUids.isEmpty()) {
+                            mostrarErrorEstado("No tienes hijos registrados");
+                            return;
+                        }
+
+                        cargarNombresHijos();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        mostrarErrorEstado("Error: " + error.getMessage());
+                    }
+                });
+    }
+
+    // ============================================================
+    // CARGAR NOMBRES DE LOS HIJOS
+    // ============================================================
+    private void cargarNombresHijos() {
+        hijosNombres.clear();
+        final int total = hijosUids.size();
+        final int[] cargados = {0};
+
+        for (String uid : hijosUids) {
+            dbRef.child("estudiantes").child(uid)
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            String nombre = snapshot.child("nombre").getValue(String.class);
+                            hijosNombres.add(nombre != null ? nombre : "Estudiante");
+
+                            cargados[0]++;
+                            if (cargados[0] == total) {
+                                if (isAdded() && binding != null) {
+                                    setupSpinnerHijos();
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            hijosNombres.add("Estudiante");
+                            cargados[0]++;
+                            if (cargados[0] == total && isAdded() && binding != null) {
+                                setupSpinnerHijos();
+                            }
+                        }
+                    });
+        }
+    }
+
+    // ============================================================
+    // CONFIGURAR SPINNER DE HIJOS
+    // ============================================================
+    private void setupSpinnerHijos() {
+        if (!isAdded() || binding == null) return;
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                hijosNombres
+        );
+
+        spinnerHijos.setAdapter(adapter);
+        spinnerHijos.setVisibility(View.VISIBLE);
+
+        spinnerHijos.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position < hijosUids.size()) {
+                    currentStudentUid = hijosUids.get(position);
+                    currentStudentName = hijosNombres.get(position);
+
+                    textViewStudentName.setText("👤 " + currentStudentName);
+                    textViewStudentName.setVisibility(View.VISIBLE);
+                    scrollViewResultados.setVisibility(View.VISIBLE);
+
+                    // Cargar TODAS las observaciones del hijo
+                    cargarTodasLasObservaciones(currentStudentUid);
+                }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("NOTIFICACIONES", "❌ Error al cargar nombres: " + error.getMessage());
-                nombresCargados = false;
-            }
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
+
+        if (textViewEstado != null) {
+            textViewEstado.setVisibility(View.GONE);
+        }
     }
 
     // ============================================================
-    // CONVERTIR NOMBRE A UID
+    // CARGAR TODAS LAS OBSERVACIONES DEL HIJO
+    // Recorre: observaciones/{uid}/{fecha}/{obsId}
     // ============================================================
-    private String convertirNombreAUid(String nombre) {
-        if (!nombresCargados || mapaNombreAUid.isEmpty()) {
-            cargarNombresEstudiantes();
-            return null;
-        }
-
-        String nombreUpper = nombre.trim().toUpperCase();
-
-        if (mapaNombreAUid.containsKey(nombreUpper)) {
-            return mapaNombreAUid.get(nombreUpper);
-        }
-
-        // Buscar coincidencia parcial
-        String mejorCoincidencia = null;
-        int minDiferencia = Integer.MAX_VALUE;
-
-        for (String key : mapaNombreAUid.keySet()) {
-            int distancia = calcularDistancia(key, nombreUpper);
-            if (distancia < minDiferencia && distancia < 5) {
-                minDiferencia = distancia;
-                mejorCoincidencia = key;
-            }
-        }
-
-        if (mejorCoincidencia != null) {
-            return mapaNombreAUid.get(mejorCoincidencia);
-        }
-
-        return null;
-    }
-
-    // ============================================================
-    // CALCULAR DISTANCIA DE LEVENSHTEIN
-    // ============================================================
-    private int calcularDistancia(String s1, String s2) {
-        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
-        for (int i = 0; i <= s1.length(); i++) {
-            dp[i][0] = i;
-        }
-        for (int j = 0; j <= s2.length(); j++) {
-            dp[0][j] = j;
-        }
-        for (int i = 1; i <= s1.length(); i++) {
-            for (int j = 1; j <= s2.length(); j++) {
-                int cost = s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1;
-                dp[i][j] = Math.min(Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1), dp[i - 1][j - 1] + cost);
-            }
-        }
-        return dp[s1.length()][s2.length()];
-    }
-
-    // ============================================================
-    // BUSCAR OBSERVACIONES
-    // ============================================================
-    private void buscarObservaciones(String nombreCompleto) {
-        // Verificar si los nombres están cargados
-        if (!nombresCargados || mapaNombreAUid.isEmpty()) {
-            Toast.makeText(getContext(), "Cargando lista de estudiantes...", Toast.LENGTH_SHORT).show();
-            cargarNombresEstudiantes();
-            new android.os.Handler().postDelayed(() -> buscarObservaciones(nombreCompleto), 1000);
-            return;
-        }
-
-        // Convertir nombre a UID
-        String uid = convertirNombreAUid(nombreCompleto);
-
-        if (uid == null) {
-            Toast.makeText(getContext(), "❌ Estudiante no encontrado", Toast.LENGTH_SHORT).show();
-            limpiarResultados();
-            return;
-        }
-
-        String nombreEstudiante = mapaUidANombre.getOrDefault(uid, nombreCompleto);
-        textViewStudentName.setText("👤 " + nombreEstudiante);
-        textViewStudentName.setVisibility(View.VISIBLE);
-        scrollViewResultados.setVisibility(View.VISIBLE);
-
-        // Mostrar mensaje de carga
+    private void cargarTodasLasObservaciones(String uid) {
         mostrarMensajeCarga();
 
-        // Buscar observaciones
-        DatabaseReference obsRef = databaseReference
-                .child("observaciones")
-                .child(uid);
+        dbRef.child("observaciones").child(uid)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        layoutObservaciones.removeAllViews();
 
-        obsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                layoutObservaciones.removeAllViews();
-
-                if (!snapshot.exists()) {
-                    mostrarMensajeSinObservaciones();
-                    return;
-                }
-
-                boolean tieneObservaciones = false;
-
-                // Recorrer los trimestres
-                for (int i = 0; i < trimestres.length; i++) {
-                    String trimestreKey = trimestres[i];
-                    String trimestreNombre = trimestresNombres[i];
-
-                    DataSnapshot trimestreSnapshot = snapshot.child(trimestreKey);
-
-                    if (trimestreSnapshot.exists()) {
-                        String texto = trimestreSnapshot.child("texto").getValue(String.class);
-
-                        if (texto != null && !texto.isEmpty()) {
-                            tieneObservaciones = true;
-                            agregarTarjetaObservacion(trimestreNombre, texto);
+                        if (!snapshot.exists()) {
+                            mostrarMensajeSinObservaciones();
+                            actualizarContador(0);
+                            return;
                         }
+
+                        // Lista para ordenar por fecha (más recientes primero)
+                        List<ObservacionItem> listaObs = new ArrayList<>();
+
+                        // Recorrer fechas
+                        for (DataSnapshot fechaSnap : snapshot.getChildren()) {
+                            String fecha = fechaSnap.getKey(); // "2026-09-15"
+
+                            // Recorrer cada observación del día
+                            for (DataSnapshot obsSnap : fechaSnap.getChildren()) {
+                                String obsId = obsSnap.getKey();
+
+                                String materia = obsSnap.child("materia").getValue(String.class);
+                                String profesorId = obsSnap.child("profesorId").getValue(String.class);
+                                String texto = obsSnap.child("texto").getValue(String.class);
+
+                                if (texto != null && !texto.isEmpty()) {
+                                    ObservacionItem item = new ObservacionItem(
+                                            obsId, fecha, materia, profesorId, texto
+                                    );
+                                    listaObs.add(item);
+                                }
+                            }
+                        }
+
+                        if (listaObs.isEmpty()) {
+                            mostrarMensajeSinObservaciones();
+                            actualizarContador(0);
+                            return;
+                        }
+
+                        // Ordenar por fecha descendente (más recientes primero)
+                        Collections.sort(listaObs, new Comparator<ObservacionItem>() {
+                            @Override
+                            public int compare(ObservacionItem a, ObservacionItem b) {
+                                return b.fecha.compareTo(a.fecha); // descendente
+                            }
+                        });
+
+                        // Mostrar cada observación
+                        for (ObservacionItem item : listaObs) {
+                            agregarTarjetaObservacion(item);
+                        }
+
+                        actualizarContador(listaObs.size());
+                        marcarComoLeidas(uid, listaObs);
                     }
-                }
 
-                if (!tieneObservaciones) {
-                    mostrarMensajeSinObservaciones();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(getContext(), "Error al cargar observaciones", Toast.LENGTH_SHORT).show();
-                mostrarMensajeError();
-            }
-        });
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        mostrarMensajeError();
+                    }
+                });
     }
 
     // ============================================================
-    // AGREGAR TARJETA DE OBSERVACIÓN
+    // TARJETA DE OBSERVACIÓN
     // ============================================================
-    private void agregarTarjetaObservacion(String trimestre, String texto) {
-        // CardView para cada observación
+    private void agregarTarjetaObservacion(ObservacionItem item) {
         CardView card = new CardView(requireContext());
         CardView.LayoutParams cardParams = new CardView.LayoutParams(
                 CardView.LayoutParams.MATCH_PARENT,
@@ -325,52 +402,130 @@ public class NotificationsFragment extends Fragment {
         card.setContentPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
         card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.white));
 
-        // Contenido de la tarjeta
         LinearLayout content = new LinearLayout(requireContext());
         content.setOrientation(LinearLayout.VERTICAL);
 
-        // Título del trimestre
-        TextView tvTrimestre = new TextView(requireContext());
-        tvTrimestre.setText("📌 " + trimestre);
-        tvTrimestre.setTextSize(16);
-        tvTrimestre.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvTrimestre.setTextColor(ContextCompat.getColor(requireContext(), R.color.curso_primero));
-        tvTrimestre.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-        content.addView(tvTrimestre);
+        // ----------------------------------------------------------
+        // Fila superior: Fecha + Materia
+        // ----------------------------------------------------------
+        LinearLayout filaSuperior = new LinearLayout(requireContext());
+        filaSuperior.setOrientation(LinearLayout.HORIZONTAL);
 
-        // Texto de la observación
-        TextView tvTexto = new TextView(requireContext());
-        tvTexto.setText(texto);
-        tvTexto.setTextSize(14);
-        tvTexto.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black));
-        tvTexto.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-        tvTexto.setPadding(0, dpToPx(8), 0, 0);
-        content.addView(tvTexto);
-
-        // Fecha
         TextView tvFecha = new TextView(requireContext());
-        tvFecha.setText("📅 " + currentDate);
-        tvFecha.setTextSize(12);
+        tvFecha.setText("📅 " + formatearFecha(item.fecha));
+        tvFecha.setTextSize(13);
         tvFecha.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
         tvFecha.setLayoutParams(new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
-        tvFecha.setPadding(0, dpToPx(8), 0, 0);
-        content.addView(tvFecha);
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        filaSuperior.addView(tvFecha);
+
+        TextView tvMateria = new TextView(requireContext());
+        tvMateria.setText("📚 " + (item.materia != null ? item.materia : "General"));
+        tvMateria.setTextSize(13);
+        tvMateria.setTypeface(null, android.graphics.Typeface.BOLD);
+        tvMateria.setTextColor(ContextCompat.getColor(requireContext(), R.color.curso_primero));
+        filaSuperior.addView(tvMateria);
+
+        content.addView(filaSuperior);
+
+        // ----------------------------------------------------------
+        // Nombre del profesor
+        // ----------------------------------------------------------
+        String nombreProfesor = mapaProfesorIdANombre.getOrDefault(
+                item.profesorId,
+                item.profesorId != null ? item.profesorId : "Profesor"
+        );
+
+        TextView tvProfesor = new TextView(requireContext());
+        tvProfesor.setText("👨‍🏫 " + nombreProfesor);
+        tvProfesor.setTextSize(13);
+        tvProfesor.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray));
+        tvProfesor.setPadding(0, dpToPx(6), 0, 0);
+        content.addView(tvProfesor);
+
+        // ----------------------------------------------------------
+        // Texto de la observación
+        // ----------------------------------------------------------
+        TextView tvTexto = new TextView(requireContext());
+        tvTexto.setText(item.texto);
+        tvTexto.setTextSize(15);
+        tvTexto.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black));
+        tvTexto.setPadding(0, dpToPx(12), 0, 0);
+        content.addView(tvTexto);
 
         card.addView(content);
         layoutObservaciones.addView(card);
     }
 
     // ============================================================
-    // MENSAJES DE ESTADO
+    // ACTUALIZAR CONTADOR
+    // ============================================================
+    private void actualizarContador(int total) {
+        if (textViewTotalObs != null) {
+            if (total > 0) {
+                textViewTotalObs.setText("📋 " + total + " observación" +
+                        (total == 1 ? "" : "es"));
+                textViewTotalObs.setVisibility(View.VISIBLE);
+            } else {
+                textViewTotalObs.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    // ============================================================
+    // MARCAR COMO LEÍDAS (guarda última fecha vista)
+    // ============================================================
+    private void marcarComoLeidas(String uid, List<ObservacionItem> items) {
+        if (items.isEmpty()) return;
+
+        // La lista está ordenada de más reciente a más antigua
+        // Guardamos la fecha de la más reciente
+        String ultimaFecha = items.get(0).fecha;
+        prefs.edit()
+                .putString("ultima_obs_" + uid, ultimaFecha)
+                .putInt("total_obs_" + uid, items.size())
+                .apply();
+    }
+
+    // ============================================================
+    // FORMATEAR FECHA (2026-09-15 → 15 sep 2026)
+    // ============================================================
+    private String formatearFecha(String fechaISO) {
+        try {
+            SimpleDateFormat entrada = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            SimpleDateFormat salida = new SimpleDateFormat("dd 'de' MMMM 'de' yyyy", new Locale("es", "ES"));
+            Date date = entrada.parse(fechaISO);
+            if (date != null) {
+                return salida.format(date);
+            }
+        } catch (ParseException e) {
+            Log.e(TAG, "Error al parsear fecha: " + fechaISO);
+        }
+        return fechaISO; // fallback
+    }
+
+    // ============================================================
+    // CLASE INTERNA PARA ORDENAR
+    // ============================================================
+    private static class ObservacionItem {
+        String obsId;
+        String fecha;
+        String materia;
+        String profesorId;
+        String texto;
+
+        ObservacionItem(String obsId, String fecha, String materia,
+                        String profesorId, String texto) {
+            this.obsId = obsId;
+            this.fecha = fecha;
+            this.materia = materia;
+            this.profesorId = profesorId;
+            this.texto = texto;
+        }
+    }
+
+    // ============================================================
+    // MENSAJES
     // ============================================================
     private void mostrarMensajeCarga() {
         layoutObservaciones.removeAllViews();
@@ -384,6 +539,7 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void mostrarMensajeSinObservaciones() {
+        layoutObservaciones.removeAllViews();
         TextView tvMensaje = new TextView(requireContext());
         tvMensaje.setText("ℹ️ No hay observaciones registradas para este estudiante");
         tvMensaje.setTextSize(16);
@@ -394,6 +550,7 @@ public class NotificationsFragment extends Fragment {
     }
 
     private void mostrarMensajeError() {
+        layoutObservaciones.removeAllViews();
         TextView tvMensaje = new TextView(requireContext());
         tvMensaje.setText("❌ Error al cargar las observaciones");
         tvMensaje.setTextSize(16);
@@ -403,27 +560,30 @@ public class NotificationsFragment extends Fragment {
         layoutObservaciones.addView(tvMensaje);
     }
 
-    // ============================================================
-    // LIMPIAR RESULTADOS
-    // ============================================================
-    private void limpiarResultados() {
-        if (layoutObservaciones != null) {
-            layoutObservaciones.removeAllViews();
+    private void mostrarErrorEstado(String mensaje) {
+        if (textViewEstado != null) {
+            textViewEstado.setText(mensaje);
+            textViewEstado.setTextColor(
+                    ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
+            textViewEstado.setVisibility(View.VISIBLE);
         }
-        if (textViewStudentName != null) {
-            textViewStudentName.setVisibility(View.GONE);
-        }
-        if (scrollViewResultados != null) {
-            scrollViewResultados.setVisibility(View.GONE);
-        }
+        spinnerHijos.setVisibility(View.GONE);
+        textViewStudentName.setVisibility(View.GONE);
+        scrollViewResultados.setVisibility(View.GONE);
     }
 
     // ============================================================
-    // UTILIDADES
+    // LIMPIAR
     // ============================================================
+    private void limpiarResultados() {
+        if (layoutObservaciones != null) layoutObservaciones.removeAllViews();
+        if (textViewStudentName != null) textViewStudentName.setVisibility(View.GONE);
+        if (scrollViewResultados != null) scrollViewResultados.setVisibility(View.GONE);
+        if (textViewTotalObs != null) textViewTotalObs.setVisibility(View.GONE);
+    }
+
     private int dpToPx(int dp) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round(dp * density);
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 
     @Override

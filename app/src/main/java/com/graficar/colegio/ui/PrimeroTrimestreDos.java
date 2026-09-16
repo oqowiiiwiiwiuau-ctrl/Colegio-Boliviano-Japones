@@ -58,7 +58,7 @@ public class PrimeroTrimestreDos extends AppCompatActivity {
     // SER:
     // Las hijas se califican sobre 10.
     // El padre SER queda sobre 5.
-    private static final double MAX_SER = 5.0;
+    private static final double MAX_SER = 10.0;
     private static final double MAX_SER_HIJA = 10.0;
 
     // SABER:

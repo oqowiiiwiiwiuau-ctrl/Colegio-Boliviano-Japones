@@ -47,8 +47,6 @@
 
     </LinearLayout>
 
-
-
     <!-- CARD INFERIOR PARA EL LOGIN -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_view"
@@ -72,7 +70,6 @@
                 android:textSize="32sp"
                 android:textStyle="bold"/>
 
-
             <View
                 android:layout_width="wrap_content"
                 android:layout_height="30dp" />
@@ -80,7 +77,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Dirección Correo"
+                android:text="Correo electrónico"
                 android:alpha="0.7"
                 android:textStyle="bold"/>
 
@@ -142,7 +139,6 @@
                 android:id="@+id/textViewError"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Usuario o contraseña incorrectos."
                 android:textColor="@color/design_default_color_error"
                 android:layout_gravity="center"
                 android:visibility="gone" />
@@ -158,6 +154,7 @@
                 android:layout_gravity="center"
                 android:alpha="0.7"/>
 
+            <!-- BOTONES DE INICIO DE SESIÓN -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -165,22 +162,29 @@
                 android:gravity="center">
 
                 <ImageView
+                    android:id="@+id/btnGoogle"
                     android:layout_width="50dp"
                     android:layout_height="50dp"
                     android:layout_margin="12dp"
-                    android:background="@drawable/google"/>
+                    android:background="@drawable/google"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Iniciar sesión con Google" />
 
                 <ImageView
                     android:layout_width="35dp"
                     android:layout_height="35dp"
                     android:layout_margin="12dp"
-                    android:background="@drawable/twiter"/>
+                    android:background="@drawable/twiter"
+                    android:alpha="0.4" />
 
                 <ImageView
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_margin="12dp"
-                    android:background="@drawable/github"/>
+                    android:background="@drawable/github"
+                    android:alpha="0.4" />
+
             </LinearLayout>
 
         </LinearLayout>

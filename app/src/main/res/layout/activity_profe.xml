@@ -6,7 +6,7 @@
     android:orientation="vertical"
     android:background="@color/fondo_app">
 
-    <!-- Encabezado elegante -->
+    <!-- Encabezado -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -15,15 +15,12 @@
         android:padding="20dp"
         android:elevation="8dp">
 
-        <!-- Logo o icono -->
         <ImageView
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:src="@drawable/ic_school"
-            android:layout_gravity="center"
-            />
+            android:layout_gravity="center" />
 
-        <!-- Título del colegio -->
         <TextView
             android:id="@+id/tvTituloColegio"
             android:layout_width="match_parent"
@@ -36,7 +33,6 @@
             android:layout_marginTop="12dp"
             android:lineSpacingExtra="4dp" />
 
-        <!-- Subtítulo -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -49,7 +45,7 @@
 
     </LinearLayout>
 
-    <!-- Saludo del profesor -->
+    <!-- Saludo al profesor -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -60,6 +56,7 @@
         android:elevation="4dp">
 
         <TextView
+            android:id="@+id/tvNombreProfesor"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -71,13 +68,12 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Año Escolar 2024"
+            android:text="Año Escolar 2026"
             android:textSize="14sp"
             android:textColor="@android:color/white"
             android:background="@color/color_accent"
             android:paddingHorizontal="12dp"
-            android:paddingVertical="4dp"
-            android:radius="12dp" />
+            android:paddingVertical="4dp" />
 
     </LinearLayout>
 
@@ -85,7 +81,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Seleccione un Curso"
+        android:text="Mis Cursos"
         android:textSize="20sp"
         android:textColor="@color/texto_primario"
         android:textStyle="bold"
@@ -95,7 +91,17 @@
         android:layout_marginTop="4dp"
         android:elevation="2dp" />
 
-    <!-- Lista de cursos en Grid -->
+    <!-- Estado de carga -->
+    <TextView
+        android:id="@+id/tvEstado"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔄 Cargando cursos..."
+        android:textSize="14sp"
+        android:gravity="center"
+        android:padding="16dp" />
+
+    <!-- Lista de cursos -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewCursos"
         android:layout_width="match_parent"
@@ -103,7 +109,8 @@
         android:layout_weight="1"
         android:padding="12dp"
         android:clipToPadding="false"
-        android:scrollbars="vertical" />
+        android:scrollbars="vertical"
+        android:visibility="gone" />
 
     <!-- Pie de página -->
     <LinearLayout

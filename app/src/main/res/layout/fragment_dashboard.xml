@@ -26,43 +26,30 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ingresa el nombre del estudiante para ver sus notas"
+            android:text="Selecciona a tu hijo para ver sus notas"
             android:textSize="14sp"
             android:textColor="#6B7A8F"
             android:layout_marginBottom="16dp" />
 
-        <!-- Campo para ingresar nombre del estudiante -->
+        <!-- Spinner de hijos -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Nombre del Estudiante:"
+            android:text="Selecciona al estudiante:"
             android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="#1A2332"
             android:layout_marginBottom="8dp" />
 
-        <EditText
-            android:id="@+id/editTextStudentName"
+        <Spinner
+            android:id="@+id/spinnerHijos"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Ej: ADUVIRI CHURA ARLIN LUCILA"
-            android:textSize="16sp"
             android:padding="14dp"
-            android:background="@drawable/edittext_border" />
+            android:background="@drawable/edittext_border"
+            android:visibility="gone" />
 
-        <!-- Botón para buscar datos -->
-        <Button
-            android:id="@+id/btnBuscarDatos"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="🔍 BUSCAR ESTUDIANTE"
-            android:layout_marginTop="15dp"
-            android:padding="14dp"
-            android:backgroundTint="#2196F3"
-            android:textColor="@android:color/white"
-            android:textStyle="bold" />
-
-        <!-- Nombre del estudiante (se mostrará después de buscar) -->
+        <!-- Nombre del estudiante seleccionado -->
         <TextView
             android:id="@+id/textStudentName"
             android:layout_width="wrap_content"
@@ -123,10 +110,9 @@
                     android:lineSpacingExtra="6dp" />
 
             </LinearLayout>
-
         </androidx.cardview.widget.CardView>
 
-        <!-- Botón para exportar PDF -->
+        <!-- Botón PDF -->
         <Button
             android:id="@+id/btnExportarPDF"
             android:layout_width="match_parent"
@@ -139,17 +125,5 @@
             android:textStyle="bold"
             android:visibility="gone" />
 
-        <!-- Mensaje de datos verificados -->
-        <TextView
-            android:id="@+id/t"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="✅ Datos verificados"
-            android:textSize="14sp"
-            android:layout_marginTop="20dp"
-            android:textColor="#4CAF50"
-            android:textStyle="bold"/>
-
     </LinearLayout>
-
 </ScrollView>

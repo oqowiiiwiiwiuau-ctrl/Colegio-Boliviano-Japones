@@ -36,7 +36,7 @@ public class MateriasPrimero extends AppCompatActivity {
         cardMatematica.setOnClickListener(v -> {
             Intent intent = new Intent(
                     MateriasPrimero.this,
-                    matematicaVerTrimestresPrimeroA.class
+                    verTrimestres.class
             );
             startActivity(intent);
         });

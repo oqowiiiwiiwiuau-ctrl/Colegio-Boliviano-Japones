@@ -18,7 +18,7 @@
             android:exported="false" />
         <!-- Actividades de cursos -->
         <activity
-            android:name=".ui.PrimeroTrimestreUno"
+            android:name=".ui.TrimestreActivity"
             android:exported="false"
             android:label="Primero de Secundaria" />
         <activity
@@ -39,7 +39,7 @@
             android:exported="false"
             android:label="Colegio App" />
         <activity
-            android:name=".ui.matematicaVerTrimestresPrimeroA"
+            android:name=".ui.verTrimestres"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
@@ -52,6 +52,14 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".ui.Centralizador"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.MateriasActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.Tablas"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
     </application>

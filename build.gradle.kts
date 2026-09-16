@@ -4,4 +4,5 @@ plugins {
     // Elimina esta línea si no la necesitas:
     // alias(libs.plugins.android.library) apply false
     id("com.google.gms.google-services") version "4.4.0" apply false
+
 }
